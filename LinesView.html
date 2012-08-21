@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Mattersight Behavior Analytics Tickers</title>
+<style>
+
+@import url(../applications/D3.js/public/Line.css);
+
+.x.axis line {
+  shape-rendering: auto;
+}
+
+.line {
+  fill: none;
+  stroke: #FF0000;
+  stroke-width: 1.5px;
+  stroke-opacity: 0.5;
+}
+
+</style>
+<script src="http://d3js.org/d3.v2.min.js?2.8.1"></script>
+
+
+<p>
+This is a demonstration of what vaious BA "tickers" could look like.
+The general design pattern of these tickers is a horizontal timeline with the current time at the right.
+The timeline drifts left as time progresses.
+<p>
+This first example is showing cumulative calls analyzed.
+At each clock tick (second) the calls that started at that second are added to the total.
+<p>
+This first example is showing call talk time.
+Each tick represents the average talk time of the calls that were just completed.
+The current time is at the right end of the x-axis.
+
+<script>
+(function()
+{
+	var	n = 500,
+		duration = 100,
+		now = new Date(Date.now() - duration),
+//		now,
+		count = 0,
+		randomNumber = d3.random.normal(338, 180),
+		initialdata = d3.range(n).map(function() { return randomNumber(); }),
+//		actualdata = d3.range(100).map(function() { return 1; }),
+//		data = initialdata.concat(actualdata);
+		data = initialdata;
+//		data = Array();
+
+//	var margin = {top: 6, right: 0, bottom: 20, left: 40},
+	var	margin = {top: 6, right: 60, bottom: 20, left: 0},
+		width = 960 - margin.right,
+		height = 200 - margin.top - margin.bottom;
+
+	var	x = d3.time.scale()
+		.domain([now - (n - 2) * duration, now - duration])
+//		.domain([now - (n) * duration, now])
+		.range([0, width]);
+
+	var y = d3.scale.linear()
+		.domain([-1, 1])
+		.range([height, 0]);
+
+	var line = d3.svg.line()
+		.interpolate("basis")
+		.x(function(d, i) { return x(now - (n - 1 - i) * duration); })
+		.y(function(d, i) { return y(d); });
+
+	var svg = d3.select("body")
+		.append("svg")
+			.attr("width", width + margin.left + margin.right)
+			.attr("height", height + margin.top + margin.bottom)
+			.style("margin-left", -margin.left + "px")
+		.append("qqq")
+			.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+	svg.append("defs").append("clipPath")
+		.attr("id", "clip")
+		.append("rect")
+		.attr("width", width)
+		.attr("height", height);
+
+	var xaxis = svg.append("g")
+		.attr("class", "x axis")
+//		.attr("transform", "translate(0," + height/2 + ")")
+		.attr("transform", "translate(0," + height + ")")
+		.call(x.axis = d3.svg.axis().scale(x).orient("bottom"));
+
+	var yaxis = svg.append("g")
+		.attr("class", "y axis")
+		.attr("transform", "translate("+width+", 0)")
+		.call(y.axis = d3.svg.axis().scale(y).ticks(5).orient("right"));
+
+	var path = svg.append("g")
+		.attr("clip-path", "url(#clip)")
+		.append("path")
+ 		.data([data])
+		.attr("class", "line");
+
+	tick();
+
+	function tick()
+	{
+		// update the domains
+//		count+=randomNumber();
+		now = new Date();
+		before = x.domain().shift();
+		x.domain([now - (n - 2) * duration, now - duration]);
+		y.domain([d3.min(data), d3.max(data)]);
+//		alert(x.domain().shift() - before);
+//		alert(x(now - (n - 1) * duration));
+//		y.domain([-1, 1]);
+
+//		push the accumulated count onto the back, and reset the count
+//		data.push(Math.min(30, count));
+//		CurrentCallCount = data.pop();
+//		data.push(CurrentCallCount);
+//		data.push(randomNumber());
+//		data.push(randomNumber());
+//		data.push(randomNumber());
+//		data.push(randomNumber());
+//		if (data.length < n)
+//		{
+//			alert(n);
+//			alert(data.length);
+//			var moredata = d3.range(1).map(function() { return randomNumber(); });
+//			data = data.concat(moredata);
+//			alert(data.length);
+//		}
+
+		// redraw the line
+		svg.select(".line")
+			.attr("d", line)
+			.attr("transform", null);
+
+		// slide the x-axis left
+		xaxis.transition()
+			.duration(duration)
+			.ease("linear")
+//			.attr("transform", "translate(0," + height * (d3.max(data)-338)/(d3.max(data) - d3.min(data)) + ")")
+			.call(x.axis);
+
+		// slide the line left
+		path.transition()
+			.duration(duration)
+			.ease("linear")
+ 			.attr("transform", "translate(" + x(now - (n - 1) * duration) + ")");
+//			.attr("transform", "translate(20)")
+
+		yaxis.transition()
+			.duration(duration)
+			.ease("linear")
+			.call(y.axis)
+			.each("end", tick);
+
+//		var moredata = d3.range(4).map(function() { return randomNumber(); });
+//		data = data.concat(moredata);
+
+//		pop the old data point off the front
+		data.shift();
+		getMoreData();
+	}
+	
+	function getMoreData()
+	{
+//		data.push(randomNumber());		
+
+//		var moredata = d3.range(1).map(function() { return randomNumber(); });
+//		data.splice(-1, );
+	}
+}
+)
+()
+</script>
+
+<p>Notice that the exiting tick marks smoothly fade-out, while the entering tick marks smoothly fade-in; this is handled automatically by the axis component. The process for transitioning the axis is the same as for the transform: update the scale’s domain, then apply linear easing.

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html;charset=utf-8">
+		<title>d3.js ~ A Bar Chart, Part 2</title>
+		<script type="text/javascript" src="http://mbostock.github.com/d3/d3.v2.js?2.9.5"></script>
+		<style type="text/css">
+			@import url("http://mbostock.github.com/d3/style.css?1.10.0");
+			@import url("http://mbostock.github.com/d3/syntax.css?1.6.0");
+		</style>
+		<style type='text/css'>
+			.chart
+			{
+				margin-left: 42px;
+			}
+
+			.chart rect
+			{
+				fill: steelblue;
+				stroke: white;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="chart1"></div>
+		<div id="chart2"></div>
+		<div id="chart3"></div>
+		<div id="chart4"></div>
+			
+<script type='text/javascript'>
+
+var t = 1297110663,
+    v = 70,
+    data = d3.range(33).map(next);
+
+var rate = 1500,
+	delay = 1000;
+
+function next() {
+  return {
+    time: ++t,
+    value: v = ~~Math.max(10, Math.min(90, v + 10 * (Math.random() - .5)))
+  };
+}
+
+var w = 20,
+    h = 80;
+
+var x = d3.scale.linear()
+    .domain([0, 1])
+    .range([0, w]);
+
+var y = d3.scale.linear()
+    .domain([0, 100])
+    .rangeRound([0, h]);
+
+function MakeChart(parent, w, h, data)
+{
+	var chart = parent.append("svg")
+    	.attr("class", "chart")
+		.attr("width", w * data.length - 1)
+		.attr("height", h);
+
+	chart.selectAll("rect")
+		.data(data)
+		.enter().append("rect")
+		.attr("x", function(d, i) { return x(i) - .5; })
+		.attr("y", function(d) { return h - y(d.value) - .5; })
+		.attr("width", w)
+		.attr("height", function(d) { return y(d.value); });
+
+	chart.append("line")
+	    .attr("x1", 0)
+	    .attr("x2", w * data.length)
+	    .attr("y1", h - .5)
+	    .attr("y2", h - .5)
+	    .style("stroke", "#000");
+	
+	return chart;
+}
+</script>
+
+<script type='text/javascript'>
+var chart1 = MakeChart(d3.select("#chart1"), w, h, data);
+</script>
+
+<script type='text/javascript'>
+var chart2 = MakeChart(d3.select("#chart2"), w, h, data);
+
+function redraw2()
+{
+	chart2.selectAll("rect")
+		.data(data)
+		.transition()
+		.duration(delay)
+		.attr("y", function(d) { return h - y(d.value) - .5; })
+		.attr("height", function(d) { return y(d.value); });
+}
+
+redraw2();
+</script>
+
+<script type='text/javascript'>
+var chart3 = MakeChart(d3.select("#chart3"), w, h, data);
+
+function redraw3()
+{
+	var	rect = chart3.selectAll("rect")
+		.data(data, function(d) { return d.time; });
+
+	rect.enter().insert("rect", "line")
+		.attr("x", function(d, i) { return x(i) - .5; })
+		.attr("y", function(d) { return h - y(d.value) - .5; })
+		.attr("width", w)
+		.attr("height", function(d) { return y(d.value); });
+
+	rect.transition()
+		.duration(delay)
+		.attr("x", function(d, i) { return x(i) - .5; });
+
+	rect.exit()
+		.remove();
+}
+
+redraw3();
+</script>
+
+<script type='text/javascript'>
+var chart4 = MakeChart(d3.select("#chart4"), w, h, data);
+
+function redraw4()
+{
+	var	rect = chart4.selectAll("rect")
+		.data(data, function(d) { return d.time; });
+
+	rect.enter().insert("rect", "line")
+		.attr("x", function(d, i) { return x(i + 1) - .5; })
+		.attr("y", function(d) { return h - y(d.value) - .5; })
+		.attr("width", w)
+		.attr("height", function(d) { return y(d.value); })
+		.transition()
+		.duration(delay)
+		.attr("x", function(d, i) { return x(i) - .5; });
+
+	rect.transition()
+		.duration(delay)
+		.attr("x", function(d, i) { return x(i) - .5; });
+
+	rect.exit().transition()
+		.duration(delay)
+		.attr("x", function(d, i) { return x(i - 1) - .5; })
+		.remove();
+}
+
+redraw4();
+</script>
+
+<script type='text/javascript'>
+setInterval(function()
+{
+	data.shift();
+	data.push(next());
+	redraw2();
+	redraw3();
+	redraw4();
+	d3.timer.flush(); // avoid memory leak when in background tab
+}, rate);
+</script>
+  </body>
+</html>

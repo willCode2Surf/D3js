@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html;charset=utf-8">
+		<title>d3.js ~ A Bar Chart, Part 2</title>
+		<script type="text/javascript" src="http://mbostock.github.com/d3/d3.v2.js?2.9.5"></script>
+		<style type="text/css">
+			@import url("http://mbostock.github.com/d3/style.css?1.10.0");
+			@import url("http://mbostock.github.com/d3/syntax.css?1.6.0");
+		</style>
+		<style type='text/css'>
+			.chart
+			{
+				margin-left: 42px;
+			}
+			
+			.chart .wait
+			{
+				fill: #008800;
+				fill-opacity: .4;
+				stroke: #008800;
+				stroke-opacity: .5;
+			}
+			
+			.chart .call
+			{
+				fill: #ff0000;
+				fill-opacity: .4;
+				stroke: #ff0000;
+				stroke-opacity: .5;
+			}
+
+			.chart .segment
+			{
+//				fill: #ff0000;
+				fill-opacity: 1.0;
+			}
+			
+			.chart .overlay
+			{
+				fill: #ffffff;
+				fill-opacity: 0.9;
+			}
+
+			.chart .event
+			{
+//				fill: #0000ff;
+				fill-opacity: 0.6;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Call Painting Bar</h1>
+		<div class="chart1"></div>
+			
+<script type='text/javascript'>
+var	offset = 0,
+	w = 2000,
+	h = 100,
+	r = 10;
+
+function GenerateCallSegment()
+{
+	segment = {
+		o: offset,
+		l: 10+50*Math.random(),
+		c: Math.round(10*Math.random())
+	};
+
+	offset += segment.l;
+	return segment;
+}
+
+function GenerateDesktopSegment()
+{
+	return = {
+		o: offset,
+		l: 10+50*Math.random(),
+		c: Math.round(10*Math.random())
+	};
+
+	offset += segment.l;
+	return segment;
+}
+
+function GenerateEvent()
+{
+	return {
+		o: offset * Math.random(),
+		c: Math.round(10*Math.random())
+	};
+}
+
+function GenerateOverlay()
+{
+	return {
+		o: offset * Math.random(),
+		l: 100+50*Math.random()
+	};
+}
+
+var CallSegmentCount = 20,
+   	CallSegmentData = d3.range(CallSegmentCount).map(GenerateSegment);
+
+var	CallEventCount = 20,
+	CallEventData = d3.range(CallEventCount).map(GenerateEvent);
+
+var	CallOverlayCount = 2,
+	CallOverlayData = d3.range(CallOverlayCount).map(GenerateOverlay);
+
+var DesktopSegmentCount = 50,
+	DesktopSegmentData = d3.range(DesktopSegmentCount).map(GenerateSegment);
+
+var	DesktopEventCount = 50,
+	DesktopEventData = d3.range(DesktopEventCount).map(GenerateEvent);
+
+var x = d3.scale.linear()
+    .domain([0, offset])
+    .range([0, w]);
+
+var y = d3.scale.linear()
+    .domain([0, 1])
+    .rangeRound([0, h]);
+
+var c = d3.scale.linear()
+	.domain([0, 1])
+	.range(["red","blue"]);
+
+var c = d3.scale.category10();
+
+function MakeTimeline(parent, w, h, CallSegmentData, CallEventData, CallOverlayData, DesktopSegmentData, DesktopEventData)
+{
+	var chart = parent.append("svg")
+		.attr("class", "chart")
+		.attr("viewBox", "-"+r+" -"+(r-r/2)+" "+(w+2*r)+" "+(h+r+r/2))
+		.attr("preserveAspectRatio", "none")
+		.attr("width", w)
+		.attr("height", h);
+
+	chart.append("rect")
+		.attr("fill", "#555555")
+		.attr("x", -r)
+		.attr("y", -(r-r/2))
+		.attr("width", w+2*r)
+		.attr("height", h+r+r/2);
+
+	chart.selectAll(".segment")
+		.data(CallSegmentData)
+		.enter().append("rect")
+		.attr("class", "segment")
+		.attr("fill", function(d) { return c(d.c); })
+		.attr("x", function(d) { return x(d.o); })
+		.attr("y", function(d) {return y(.3); })
+		.attr("width", function(d) {return x(d.l); })
+		.attr("height", r);
+
+	chart.selectAll(".overlay")
+		.data(CallOverlayData)
+		.enter().append("rect")
+		.attr("class", "overlay")
+		.attr("x", function(d) { return x(d.o); })
+		.attr("y", function(d) {return y(.3); })
+		.attr("width", function(d) {return x(d.l); })
+		.attr("height", r);
+
+	chart.selectAll(".event")
+		.data(CallEventData)
+		.enter().append("ellipse")
+		.attr("class", "event")
+		.attr("fill", function(d) { return c(d.c); })
+		.attr("cx", function(d) { return x(d.o); })
+		.attr("cy", function(d) {return y(.3) + r/2; })
+		.attr("rx", r/1.5)
+		.attr("ry", r)
+	;
+	
+	return chart;
+}
+</script>
+
+<script type='text/javascript'>
+var Timeline = MakeTimeline(d3.select(".chart1"), w, h, CallSegmentData, CallEventData, CallOverlayData, DesktopSegmentData, DesktopEventData);
+</script>
+  </body>
+</html>
