@@ -57,14 +57,14 @@ text {
 <script>
 
 // Various accessors that specify the dimensions of data to visualize.
-function x(d) { return d.income; }
-function y(d) { return d.lifeExpectancy; }
-function radius(d) { return d.population; }
-function color(d) { return d.region; }
+function x(d) { return d.att; }
+function y(d) { return d.fcr; }
+function radius(d) { return 10; }
+function color(d) { return d.team; }
 function key(d) { return d.name; }
 
-var StartYear = 1900,
-	EndYear = 2000;
+var StartWeek = 1,
+	EndWeek = 52;
 
 // Chart dimensions.
 var margin = {top: 20, right: 20, bottom: 20, left: 100},
@@ -72,9 +72,9 @@ var margin = {top: 20, right: 20, bottom: 20, left: 100},
     height = 500 - margin.top - margin.bottom;
 
 // Various scales. These domains make assumptions of data, naturally.
-var xScale = d3.scale.linear().domain([0, 12000]).range([0, width]),
-    yScale = d3.scale.linear().domain([25, 70]).range([height, 0]),
-    radiusScale = d3.scale.sqrt().domain([0, 5e7]).range([0, 40]),
+var xScale = d3.scale.linear().domain([0, 1000]).range([0, width]),
+    yScale = d3.scale.linear().domain([0, 1]).range([height, 0]),
+    radiusScale = d3.scale.linear().domain([0, 10]).range([0, 10]),
     colorScale = d3.scale.category10();
 
 // The x & y axes.
@@ -123,19 +123,20 @@ var label = svg.append("text")
     .attr("text-anchor", "end")
     .attr("y", height - 24)
     .attr("x", width)
-    .text(StartYear);
+    .text(StartWeek);
 
 // Load the data.
-d3.json("./nations1.json", function(nations) {
+d3.json("./agents.json", function(nations) {
+	alert("hi");
 
 	// A bisector since many nation's data is sparsely-defined.
 	var bisect = d3.bisector(function(d) { return d[0]; });
 
-	// Add a dot per nation. Initialize the data at StartYear, and set the colors.
+	// Add a dot per nation. Initialize the data at StartWeek, and set the colors.
 	var dot = svg.append("g")
 		.attr("class", "dots")
 		.selectAll(".dot")
-		.data(interpolateData(StartYear))
+		.data(interpolateData(StartWeek))
 		.enter().append("circle")
 		.attr("class", "dot")
 		.style("fill", function(d) { return colorScale(color(d)); })
@@ -179,7 +180,7 @@ d3.json("./nations1.json", function(nations) {
 	// After the transition finishes, you can mouseover to change the year.
 	function enableInteraction() {
 		var yearScale = d3.scale.linear()
-			.domain([StartYear, EndYear])
+			.domain([StartWeek, EndWeek])
 			.range([box.x + 10, box.x + box.width - 10])
 			.clamp(true);
 
@@ -208,7 +209,7 @@ d3.json("./nations1.json", function(nations) {
 	// Tweens the entire chart by first tweening the year, and then the data.
 	// For the interpolated data, the dots and label are redrawn.
 	function tweenYear() {
-		var year = d3.interpolateNumber(StartYear, EndYear);
+		var year = d3.interpolateNumber(StartWeek, EndWeek);
 		return function(t) { displayYear(year(t)); };
 	}
 
@@ -223,10 +224,9 @@ d3.json("./nations1.json", function(nations) {
 		return nations.map(function(d) {
 			return {
 				name: d.name,
-				region: d.region,
-				income: interpolateValues(d.income, year),
-				population: interpolateValues(d.population, year),
-				lifeExpectancy: interpolateValues(d.lifeExpectancy, year)
+				team: d.team,
+				att: interpolateValues(d.att, year),
+				fcr: interpolateValues(d.fcr, year)
 			};
 		});
 	}
