@@ -28,12 +28,12 @@ text {
   fill: #777;
 }
 
-.year.label {
+.time.label {
   font: 500 50px "Helvetica Neue";
   fill: #ddd;
 }
 
-.year.label.active {
+.time.label.active {
   fill: #aaa;
 }
 
@@ -51,8 +51,6 @@ text {
 
 <p id="chart"></p>
 
-<aside>Mouseover the year to move forward and backwards through time.</aside>
-
 <script src="http://d3js.org/d3.v2.js?2.8.1"></script>
 <script>
 
@@ -68,10 +66,12 @@ var StartWeek = 1,
 
 // Chart dimensions.
 var margin = {top: 20, right: 20, bottom: 20, left: 100},
-    width = 960 - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom;
+//	width = 800 - margin.left - margin.right,
+//	height = 800 - margin.top - margin.bottom;
+	width = 600,
+	height = 600;
 
-// Various scales. These domains make assumptions of data, naturally.
+// Various scales.
 var xScale = d3.scale.linear().domain([0, 1000]).range([0, width]),
     yScale = d3.scale.linear().domain([0, 1]).range([height, 0]),
     radiusScale = d3.scale.linear().domain([0, 10]).range([0, 10]),
@@ -119,9 +119,9 @@ svg.append("text")
     .attr("transform", "rotate(-90)")
     .text("FirstCall Resolution (%)");
 
-// Add the year label; the value is set on transition.
+// Add the time label; the value is set on transition.
 var label = svg.append("text")
-    .attr("class", "year label")
+    .attr("class", "time label")
     .attr("text-anchor", "end")
     .attr("y", height -24)
     .attr("x", width)
@@ -148,7 +148,7 @@ d3.json("./agents.json", function(nations) {
 	 dot.append("title")
 		.text(function(d) { return d.name; });
 
-	// Add an overlay for the year label.
+	// Add an overlay for the time label.
 	var box = label.node().getBBox();
 
 	var overlay = svg.append("rect")
@@ -159,11 +159,11 @@ d3.json("./agents.json", function(nations) {
 		.attr("height", box.height)
 		.on("mouseover", enableInteraction);
 
-	// Start a transition that interpolates the data based on year.
+	// Start a transition that interpolates the data based on time.
 	svg.transition()
 		.duration(5000)
 		.ease("linear")
-		.tween("year", tweenYear)
+		.tween("time", tweenTime)
 		.each("end", enableInteraction);
 
 	// Positions the dots based on data.
@@ -178,9 +178,9 @@ d3.json("./agents.json", function(nations) {
 		return radius(b) - radius(a);
 	}
 
-	// After the transition finishes, you can mouseover to change the year.
+	// After the transition finishes, you can mouseover to change the time.
 	function enableInteraction() {
-		var yearScale = d3.scale.linear()
+		var timeScale = d3.scale.linear()
 			.domain([StartWeek, EndWeek])
 			.range([box.x + 10, box.x + box.width - 10])
 			.clamp(true);
@@ -203,42 +203,42 @@ d3.json("./agents.json", function(nations) {
 		}
 
 		function mousemove() {
-			displayYear(yearScale.invert(d3.mouse(this)[0]));
+			displayTime(timeScale.invert(d3.mouse(this)[0]));
 		}
 	}
 
-	// Tweens the entire chart by first tweening the year, and then the data.
+	// Tweens the entire chart by first tweening the time, and then the data.
 	// For the interpolated data, the dots and label are redrawn.
-	function tweenYear() {
-		var year = d3.interpolateNumber(StartWeek, EndWeek);
-		return function(t) { displayYear(year(t)); };
+	function tweenTime() {
+		var time = d3.interpolateNumber(StartWeek, EndWeek);
+		return function(t) { displayTime(time(t)); };
 	}
 
-	// Updates the display to show the specified year.
-	function displayYear(year) {
-		dot.data(interpolateData(year), key).call(position).sort(SmallestOnTop);
-		label.text("Week "+formatWeek(Math.round(year)));
+	// Updates the display to show the specified time.
+	function displayTime(time) {
+		dot.data(interpolateData(time), key).call(position).sort(SmallestOnTop);
+		label.text("Week "+formatWeek(Math.round(time)));
 	}
 
-	// Interpolates the dataset for the given (fractional) year.
-	function interpolateData(year) {
+	// Interpolates the dataset for the given (fractional) date.
+	function interpolateData(time) {
 		return nations.map(function(d) {
 			return {
 				name: d.name,
 				team: d.team,
-				att: interpolateValues(d.att, year),
-				fcr: interpolateValues(d.fcr, year)
+				att: interpolateValues(d.att, time),
+				fcr: interpolateValues(d.fcr, time)
 			};
 		});
 	}
 
-	// Finds (and possibly interpolates) the value for the specified year.
-	function interpolateValues(values, year) {
-		var i = bisect.left(values, year, 0, values.length - 1),
+	// Finds (and possibly interpolates) the value for the specified time.
+	function interpolateValues(values, time) {
+		var i = bisect.left(values, time, 0, values.length - 1),
 		    a = values[i];
 		if (i > 0) {
 			 var b = values[i - 1],
-			     t = (year - a[0]) / (b[0] - a[0]);
+			     t = (time - a[0]) / (b[0] - a[0]);
 			 return a[1] * (1 - t) + b[1] * t;
 		}
 		return a[1];
