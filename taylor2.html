@@ -25,7 +25,8 @@ text {
 }
 
 .label {
-  fill: #777;
+  font: 15px sans-serif;
+  fill: #070707;
 }
 
 .time.label {
@@ -46,7 +47,7 @@ text {
 </style>
 
 <header>
-  <aside>Demonstration of Bus Mon</aside>
+  <aside>ATT versus FCR</aside>
 </header>
 
 <p id="chart"></p>
@@ -117,7 +118,7 @@ svg.append("text")
     .attr("y", 6)
     .attr("dy", ".75em")
     .attr("transform", "rotate(-90)")
-    .text("FirstCall Resolution (%)");
+    .text("First Call Resolution (%)");
 
 // Add the time label; the value is set on transition.
 var label = svg.append("text")
