@@ -62,7 +62,7 @@ function radius(d) { return 5; }
 function color(d) { return d.team; }
 function key(d) { return d.name; }
 
-var zzz = d3.time.format("Week %U");
+var zzz = d3.time.format("%Y Week %U");
 
 //var xStartWeek = zzz(new Date("12/31/2012"));
 //alert(xStartWeek);
@@ -134,7 +134,18 @@ var label = svg.append("text")
     .text(zzz(StartWeek));
 
 // Load the data.
-d3.json("./agents.json", function(nations) {
+d3.json("./agents3.json", function(nations) {
+
+	nations = nations.map(
+			function(d){
+				return {
+					name: d.name,
+					team: d.team,
+					att: d.att.map(function(v){return [new Date(v[0]),v[1]];}),
+					fcr: d.fcr.map(function(v){return [new Date(v[0]),v[1]];})
+				};
+			}
+		);
 
 	// A bisector since many nation's data is sparsely-defined.
 	var bisect = d3.bisector(function(d) { return new Date(d[0]); });
@@ -232,6 +243,7 @@ d3.json("./agents.json", function(nations) {
 
 	// Interpolates the dataset for the given (fractional) date.
 	function interpolateData(time) {
+//		alert("interpolateData");
 		return nations.map(function(d) {
 			return {
 				name: d.name,
@@ -244,6 +256,18 @@ d3.json("./agents.json", function(nations) {
 
 	// Finds (and possibly interpolates) the value for the specified time.
 	function interpolateValues(values, time) {
+//		alert("interpolateValues");
+//		alert(values.length);
+//		values = values.map(
+//				function(d){
+//					return [new Date(d[0]),d[1]];
+//				}
+//				);
+//		values[0][0] = new Date(values[0][0]);
+//		alert(time);
+//		alert(values[0][1]);
+//		alert(values[1][1]);
+		
 		var i = bisect.left(values, time, 0, values.length - 1),
 		    a = values[i];
 		if (i > 0) {
