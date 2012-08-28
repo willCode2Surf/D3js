@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Bus Mon</title>
+<style>
+
+@import url(../style.css?20120427);
+
+#chart {
+  margin-left: -40px;
+  height: 506px;
+}
+
+text {
+  font: 10px sans-serif;
+}
+
+.dot {
+  stroke: #000;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.label {
+  font: 15px sans-serif;
+  fill: #070707;
+}
+
+.time.label {
+  font: 500 50px "Helvetica Neue";
+  fill: #ddd;
+}
+
+.time.label.active {
+  fill: #aaa;
+}
+
+.overlay {
+  fill: none;
+  pointer-events: all;
+  cursor: ew-resize;
+}
+
+</style>
+
+<header>
+  <aside>ATT versus FCR</aside>
+</header>
+
+<p id="chart"></p>
+
+<script src="http://d3js.org/d3.v2.js?2.8.1"></script>
+<script>
+
+// Various accessors that specify the dimensions of data to visualize.
+function x(d) { return d.att; }
+function y(d) { return d.fcr; }
+function radius(d) { return 5; }
+function color(d) { return d.team; }
+function key(d) { return d.name; }
+
+var zzz = d3.time.format("Week %U");
+
+//var xStartWeek = zzz(new Date("12/31/2012"));
+//alert(xStartWeek);
+
+var StartWeek = new Date("1/8/2012"),
+	EndWeek = new Date("12/31/2012");
+
+// Chart dimensions.
+var margin = {top: 20, right: 20, bottom: 20, left: 100},
+//	width = 800 - margin.left - margin.right,
+//	height = 800 - margin.top - margin.bottom;
+	width = 600,
+	height = 600;
+
+// Various scales.
+var xScale = d3.scale.linear().domain([0, 1000]).range([0, width]),
+    yScale = d3.scale.linear().domain([0, 1]).range([height, 0]),
+    radiusScale = d3.scale.linear().domain([0, 10]).range([0, 10]),
+    colorScale = d3.scale.category10();
+
+// The x & y axes.
+var xAxis = d3.svg.axis().orient("bottom").scale(xScale).ticks(12, d3.format(",d")),
+    yAxis = d3.svg.axis().orient("left").scale(yScale).ticks(10).tickFormat(d3.format("%"));
+
+var formatWeek = d3.format("02");
+
+// Create the SVG container and set the origin.
+var svg = d3.select("#chart")
+	.append("svg")
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
+	.append("g")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+// Add the x-axis.
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis);
+
+// Add the y-axis.
+svg.append("g")
+    .attr("class", "y axis")
+    .call(yAxis);
+
+// Add an x-axis label.
+svg.append("text")
+    .attr("class", "x label")
+    .attr("text-anchor", "end")
+    .attr("x", width)
+    .attr("y", height - 6)
+    .text("Average Talk Time (sec)");
+
+// Add a y-axis label.
+svg.append("text")
+    .attr("class", "y label")
+    .attr("text-anchor", "end")
+    .attr("y", 6)
+    .attr("dy", ".75em")
+    .attr("transform", "rotate(-90)")
+    .text("First Call Resolution (%)");
+
+// Add the time label; the value is set on transition.
+var label = svg.append("text")
+    .attr("class", "time label")
+    .attr("text-anchor", "end")
+    .attr("y", height -24)
+    .attr("x", width)
+    .text(zzz(StartWeek));
+
+// Load the data.
+d3.json("./agents.json", function(nations) {
+
+	// A bisector since many nation's data is sparsely-defined.
+	var bisect = d3.bisector(function(d) { return new Date(d[0]); });
+
+	// Add a dot per nation. Initialize the data at StartWeek, and set the colors.
+	var dot = svg.append("g")
+		.attr("class", "dots")
+		.selectAll(".dot")
+		.data(interpolateData(StartWeek))
+		.enter().append("circle")
+		.attr("class", "dot")
+		.style("fill", function(d) { return colorScale(color(d)); })
+		.call(position)
+		.sort(SmallestOnTop);
+
+	// Add a title.
+	 dot.append("title")
+		.text(function(d) { return d.name; });
+
+	// Add an overlay for the time label.
+	var box = label.node().getBBox();
+
+	var overlay = svg.append("rect")
+		.attr("class", "overlay")
+		.attr("x", box.x)
+		.attr("y", box.y)
+		.attr("width", box.width)
+		.attr("height", box.height)
+		.on("mouseover", enableInteraction);
+
+	// Start a transition that interpolates the data based on time.
+	svg.transition()
+		.duration(5000)
+		.ease("linear")
+		.tween("time", tweenTime)
+		.each("end", enableInteraction);
+
+	// Positions the dots based on data.
+	function position(dot) {
+		dot	.attr("cx", function(d) { return xScale(x(d)); })
+			.attr("cy", function(d) { return yScale(y(d)); })
+			.attr("r", function(d) { return radiusScale(radius(d)); });
+	}
+
+	// Defines a sort order so that the smallest dots are drawn on top.
+	function SmallestOnTop(a, b) {
+		return radius(b) - radius(a);
+	}
+
+	// After the transition finishes, you can mouseover to change the time.
+	function enableInteraction() {
+		var timeScale = d3.time.scale()
+			.domain([StartWeek, EndWeek])
+			.range([box.x + 10, box.x + box.width - 10])
+			.clamp(true);
+
+		var timeTweenScale = d3.time.scale()
+			.domain([0, 1])
+			.range([StartWeek, EndWeek]);
+	
+		// Cancel the current transition, if any.
+		svg.transition().duration(0);
+
+		overlay
+			.on("mouseover", mouseover)
+			.on("mouseout", mouseout)
+			.on("mousemove", mousemove)
+			.on("touchmove", mousemove);
+
+		function mouseover() {
+			label.classed("active", true);
+		}
+
+		function mouseout() {
+			label.classed("active", false);
+		}
+
+		function mousemove() {
+			displayTime(timeScale.invert(d3.mouse(this)[0]));
+		}
+	}
+
+	// Tweens the entire chart by first tweening the time, and then the data.
+	// For the interpolated data, the dots and label are redrawn.
+	function tweenTime() {
+//		var time = d3.interpolateNumber(StartWeek, EndWeek);
+		return function(t) { displayTime(timeTweenScale(t)); };
+	}
+
+	// Updates the display to show the specified time.
+	function displayTime(time) {
+		dot.data(interpolateData(time), key).call(position).sort(SmallestOnTop);
+		label.text(zzz(time));
+	}
+
+	// Interpolates the dataset for the given (fractional) date.
+	function interpolateData(time) {
+		return nations.map(function(d) {
+			return {
+				name: d.name,
+				team: d.team,
+				att: interpolateValues(d.att, time),
+				fcr: interpolateValues(d.fcr, time)
+			};
+		});
+	}
+
+	// Finds (and possibly interpolates) the value for the specified time.
+	function interpolateValues(values, time) {
+		var i = bisect.left(values, time, 0, values.length - 1),
+		    a = values[i];
+		if (i > 0) {
+			 var b = values[i - 1],
+			     t = (time - a[0]) / (b[0] - a[0]);
+			 return a[1] * (1 - t) + b[1] * t;
+		}
+		return a[1];
+	}
+});
+
+</script>
