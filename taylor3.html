@@ -44,6 +44,11 @@ text {
   cursor: ew-resize;
 }
 
+.hidden {
+  fill: none;
+  pointer-events: all;
+}
+
 </style>
 
 <header>
@@ -62,13 +67,16 @@ function radius(d) { return 5; }
 function color(d) { return d.team; }
 function key(d) { return d.name; }
 
-var zzz = d3.time.format("%Y Week %U");
+var zzz = d3.time.format("%b %d, %Y");
 
 //var xStartWeek = zzz(new Date("12/31/2012"));
 //alert(xStartWeek);
 
-var StartWeek = new Date("1/8/2012"),
+var StartWeek = new Date("1/1/2012"),
 	EndWeek = new Date("12/31/2012");
+var timeTweenScale = d3.time.scale()
+	.domain([StartWeek, EndWeek])
+	.range([0, 1]);
 
 // Chart dimensions.
 var margin = {top: 20, right: 20, bottom: 20, left: 100},
@@ -134,9 +142,9 @@ var label = svg.append("text")
     .text(zzz(StartWeek));
 
 // Load the data.
-d3.json("./agents3.json", function(nations) {
+d3.json("./agents3.json", function(agents) {
 
-	nations = nations.map(
+	agents = agents.map(
 			function(d){
 				return {
 					name: d.name,
@@ -165,6 +173,14 @@ d3.json("./agents3.json", function(nations) {
 	 dot.append("title")
 		.text(function(d) { return d.name; });
 
+	svg.append("rect")
+		.attr("class", "hidden")
+		.attr("x", 0)
+		.attr("y", 0)
+		.attr("width", width)
+		.attr("height", height)
+		.on("click", TimeTransition);
+		
 	// Add an overlay for the time label.
 	var box = label.node().getBBox();
 
@@ -177,11 +193,11 @@ d3.json("./agents3.json", function(nations) {
 		.on("mouseover", enableInteraction);
 
 	// Start a transition that interpolates the data based on time.
-	svg.transition()
-		.duration(5000)
-		.ease("linear")
-		.tween("time", tweenTime)
-		.each("end", enableInteraction);
+	TimeTransition();
+//	svg.transition()
+//		.duration(5000)
+//		.ease("linear")
+//		.tween("time", tweenTime);
 
 	// Positions the dots based on data.
 	function position(dot) {
@@ -197,24 +213,26 @@ d3.json("./agents3.json", function(nations) {
 
 	// After the transition finishes, you can mouseover to change the time.
 	function enableInteraction() {
+		// Cancel the current transition, if any.
+		svg.transition().duration(0);
+		alert("cancel");
+		
 		var timeScale = d3.time.scale()
 			.domain([StartWeek, EndWeek])
 			.range([box.x + 10, box.x + box.width - 10])
 			.clamp(true);
-
-		var timeTweenScale = d3.time.scale()
-			.domain([0, 1])
-			.range([StartWeek, EndWeek]);
 	
-		// Cancel the current transition, if any.
-		svg.transition().duration(0);
 
 		overlay
+			.on("click", click)
 			.on("mouseover", mouseover)
 			.on("mouseout", mouseout)
 			.on("mousemove", mousemove)
 			.on("touchmove", mousemove);
 
+		function click() {
+			svg.transition().duration(0);
+		}
 		function mouseover() {
 			label.classed("active", true);
 		}
@@ -228,11 +246,18 @@ d3.json("./agents3.json", function(nations) {
 		}
 	}
 
+	function TimeTransition() {
+		alert("trans");
+		svg.transition()
+			.duration(5000)
+			.ease("linear")
+			.tween("time", tweenTime);
+	}
+	
 	// Tweens the entire chart by first tweening the time, and then the data.
 	// For the interpolated data, the dots and label are redrawn.
 	function tweenTime() {
-//		var time = d3.interpolateNumber(StartWeek, EndWeek);
-		return function(t) { displayTime(timeTweenScale(t)); };
+		return function(t) { displayTime(timeTweenScale.invert(t)); };
 	}
 
 	// Updates the display to show the specified time.
@@ -244,7 +269,7 @@ d3.json("./agents3.json", function(nations) {
 	// Interpolates the dataset for the given (fractional) date.
 	function interpolateData(time) {
 //		alert("interpolateData");
-		return nations.map(function(d) {
+		return agents.map(function(d) {
 			return {
 				name: d.name,
 				team: d.team,
@@ -256,18 +281,6 @@ d3.json("./agents3.json", function(nations) {
 
 	// Finds (and possibly interpolates) the value for the specified time.
 	function interpolateValues(values, time) {
-//		alert("interpolateValues");
-//		alert(values.length);
-//		values = values.map(
-//				function(d){
-//					return [new Date(d[0]),d[1]];
-//				}
-//				);
-//		values[0][0] = new Date(values[0][0]);
-//		alert(time);
-//		alert(values[0][1]);
-//		alert(values[1][1]);
-		
 		var i = bisect.left(values, time, 0, values.length - 1),
 		    a = values[i];
 		if (i > 0) {
