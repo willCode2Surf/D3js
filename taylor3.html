@@ -62,12 +62,12 @@ function radius(d) { return 5; }
 function color(d) { return d.team; }
 function key(d) { return d.name; }
 
-var zzz = d3.time.format("%Y Week %U");
+var zzz = d3.time.format("%b %d, %Y");
 
 //var xStartWeek = zzz(new Date("12/31/2012"));
 //alert(xStartWeek);
 
-var StartWeek = new Date("1/8/2012"),
+var StartWeek = new Date("1/8/2011"),
 	EndWeek = new Date("12/31/2012");
 
 // Chart dimensions.
