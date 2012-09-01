@@ -73,8 +73,9 @@ var zzz = d3.time.format("%b %d, %Y");
 //alert(xStartWeek);
 
 
-var StartWeek = new Date("1/1/2011"),
-	EndWeek = new Date("12/31/2013");
+var StartWeek = new Date("11/1/2011"),
+	EndWeek = new Date("3/1/2013");
+
 var timeTweenScale = d3.time.scale()
 	.domain([StartWeek, EndWeek])
 	.range([0, 1]);
@@ -134,6 +135,7 @@ svg.append("text")
     .attr("transform", "rotate(-90)")
     .text("First Call Resolution (%)");
 
+
 // Add the time label; the value is set on transition.
 var label = svg.append("text")
     .attr("class", "time label")
@@ -143,28 +145,38 @@ var label = svg.append("text")
     .text(zzz(StartWeek));
 
 // Load the data.
-//d3.json("./agents3.json", function(agents) {
+d3.json("./agents3.json", function(agents) {
 //d3.json("./agentsmack.json", function(agents) {
 //d3.json("http://dt06017:8080/", function(agents) {
-d3.json("http://192.168.17.139/dev/sandbox/Portal/Developer/dbrown/git/D3js/agents.php", function(agents) {
+//d3.json("http://192.168.17.139/dev/sandbox/Portal/Developer/dbrown/git/D3js/agents.php", function(agents) {
 
-	agents = agents.map(
-			function(d){
-				return {
-					name: d.name,
-					team: d.team,
-					att: d.att.map(function(v){return [new Date(v[0]),v[1]];}),
-					fcr: d.fcr.map(function(v){return [new Date(v[0]),v[1]];})
-				};
-			}
-		);
+	function TimeConvert(d) {
+		d[0] = new Date(d[0]);
+	}
+	
+	function TimeSort(d1, d2) {
+		return d1[0] - d2[0];
+	}
+	
+	agents.map(
+		function(d) {
+			d.att.map(TimeConvert);
+			d.fcr.map(TimeConvert);
+			d.att.sort(TimeSort);
+			d.fcr.sort(TimeSort);
+		}
+	);
 
-	alert(agents[0].att[0][0]);
+	svg.append("rect")
+		.attr("class", "hidden")
+		.attr("x", 0)
+		.attr("y", 0)
+		.attr("width", width)
+		.attr("height", height)
+		.on("click", TimeTransition);
 
-	// A bisector since many nation's data is sparsely-defined.
-//	var bisect = d3.bisector(function(d) { return new Date(d[0]); });
+	// A bisector since agents' data may be sparsely-defined.
 	var bisect = d3.bisector(function(d) { return d[0]; });
-	var bisectR = d3.bisector(function(d) { return d[0]; }).right;
 
 	// Add a dot per nation. Initialize the data at StartWeek, and set the colors.
 	var dot = svg.append("g")
@@ -180,14 +192,6 @@ d3.json("http://192.168.17.139/dev/sandbox/Portal/Developer/dbrown/git/D3js/agen
 	// Add a title.
 	 dot.append("title")
 		.text(function(d) { return d.name; });
-
-	svg.append("rect")
-		.attr("class", "hidden")
-		.attr("x", 0)
-		.attr("y", 0)
-		.attr("width", width)
-		.attr("height", height)
-		.on("click", TimeTransition);
 		
 	// Add an overlay for the time label.
 	var box = label.node().getBBox();
