@@ -159,6 +159,8 @@ d3.json("http://192.168.17.139/dev/sandbox/Portal/Developer/dbrown/git/D3js/agen
 			}
 		);
 
+	alert(agents[0].att[0][0]);
+
 	// A bisector since many nation's data is sparsely-defined.
 //	var bisect = d3.bisector(function(d) { return new Date(d[0]); });
 	var bisect = d3.bisector(function(d) { return d[0]; });
