@@ -67,11 +67,7 @@ function radius(d) { return 5; }
 function color(d) { return d.team; }
 function key(d) { return d.name; }
 
-var zzz = d3.time.format("%b %d, %Y");
-
-//var xStartWeek = zzz(new Date("12/31/2012"));
-//alert(xStartWeek);
-
+var TimeFormat = d3.time.format("%b %d, %Y");
 
 var StartWeek = new Date("11/1/2011"),
 	EndWeek = new Date("3/1/2013");
@@ -96,8 +92,6 @@ var xScale = d3.scale.linear().domain([0, 1000]).range([0, width]),
 // The x & y axes.
 var xAxis = d3.svg.axis().orient("bottom").scale(xScale).ticks(12, d3.format(",d")),
     yAxis = d3.svg.axis().orient("left").scale(yScale).ticks(10).tickFormat(d3.format("%"));
-
-var formatWeek = d3.format("02");
 
 // Create the SVG container and set the origin.
 var svg = d3.select("#chart")
@@ -142,13 +136,16 @@ var label = svg.append("text")
     .attr("text-anchor", "end")
     .attr("y", height -24)
     .attr("x", width)
-    .text(zzz(StartWeek));
+    .text(TimeFormat(StartWeek));
 
 // Load the data.
 d3.json("./agents3.json", function(agents) {
 //d3.json("./agentsmack.json", function(agents) {
 //d3.json("http://dt06017:8080/", function(agents) {
 //d3.json("http://192.168.17.139/dev/sandbox/Portal/Developer/dbrown/git/D3js/agents.php", function(agents) {
+
+	// A bisector since agents' data may be sparsely-defined.
+	var bisect = d3.bisector(function(d) { return d[0]; });
 
 	function TimeConvert(d) {
 		d[0] = new Date(d[0]);
@@ -174,9 +171,6 @@ d3.json("./agents3.json", function(agents) {
 		.attr("width", width)
 		.attr("height", height)
 		.on("click", TimeTransition);
-
-	// A bisector since agents' data may be sparsely-defined.
-	var bisect = d3.bisector(function(d) { return d[0]; });
 
 	// Add a dot per nation. Initialize the data at StartWeek, and set the colors.
 	var dot = svg.append("g")
@@ -259,7 +253,6 @@ d3.json("./agents3.json", function(agents) {
 	}
 
 	function TimeTransition() {
-//		alert("trans");
 		svg.transition()
 			.duration(5000)
 			.ease("linear")
@@ -275,7 +268,7 @@ d3.json("./agents3.json", function(agents) {
 	// Updates the display to show the specified time.
 	function displayTime(time) {
 		dot.data(interpolateData(time), key).call(position).sort(SmallestOnTop);
-		label.text(zzz(time));
+		label.text(TimeFormat(time));
 	}
 
 	// Interpolates the dataset for the given (fractional) date.
