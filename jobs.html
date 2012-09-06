@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Radiator</title>
+<style>
+
+	@import url(../style.css?20120427);
+
+</style>
+
+<header>
+	<aside>Radiator</aside>
+</header>
+
+<p id="radiator"></p>
+
+<script src="http://d3js.org/d3.v2.js?2.8.1"></script>
+<script>
+
+
+// Load the data.
+d3.json("./jobs.php", function(Jobs) {
+
+	function TimeConvert(d) {
+		d[0] = new Date(d[0]);
+	}
+	
+	function TimeSort(d1, d2) {
+		return d1[0] - d2[0];
+	}
+	
+	var Revisions = Jobs.map(
+		function(d) {
+			return {
+				revision: d.revision
+			};
+		}
+	);
+
+	svg.append("rect")
+		.attr("class", "hidden")
+		.attr("x", 0)
+		.attr("y", 0)
+		.attr("width", width)
+		.attr("height", height)
+		.on("click", TimeTransition);
+
+	// Add a dot per nation. Initialize the data at StartWeek, and set the colors.
+	var dot = svg.append("g")
+		.attr("class", "dots")
+		.selectAll(".dot")
+		.data(interpolateData(StartWeek))
+		.enter().append("circle")
+		.attr("class", "dot")
+		.style("fill", function(d) { return colorScale(color(d)); })
+		.call(position)
+		.sort(SmallestOnTop);
+
+	// Add a title.
+	 dot.append("title")
+		.text(function(d) { return d.name; });
+		
+	// Add an overlay for the time label.
+	var box = label.node().getBBox();
+
+	var overlay = svg.append("rect")
+		.attr("class", "overlay")
+		.attr("x", box.x)
+		.attr("y", box.y)
+		.attr("width", box.width)
+		.attr("height", box.height)
+		.on("mouseover", enableInteraction);
+
+	// Start a transition that interpolates the data based on time.
+	TimeTransition();
+//	svg.transition()
+//		.duration(5000)
+//		.ease("linear")
+//		.tween("time", tweenTime);
+
+	// Positions the dots based on data.
+	function position(dot) {
+		dot	.attr("cx", function(d) { return xScale(x(d)); })
+			.attr("cy", function(d) { return yScale(y(d)); })
+			.attr("r", function(d) { return radiusScale(radius(d)); });
+	}
+
+	// Defines a sort order so that the smallest dots are drawn on top.
+	function SmallestOnTop(a, b) {
+		return radius(b) - radius(a);
+	}
+
+	// After the transition finishes, you can mouseover to change the time.
+	function enableInteraction() {
+		// Cancel the current transition, if any.
+		svg.transition().duration(0);
+//		alert("cancel");
+		
+		var timeScale = d3.time.scale()
+			.domain([StartWeek, EndWeek])
+			.range([box.x + 10, box.x + box.width - 10])
+			.clamp(true);
+	
+
+		overlay
+			.on("click", click)
+			.on("mouseover", mouseover)
+			.on("mouseout", mouseout)
+			.on("mousemove", mousemove)
+			.on("touchmove", mousemove);
+
+		function click() {
+			svg.transition().duration(0);
+		}
+		function mouseover() {
+			label.classed("active", true);
+		}
+
+		function mouseout() {
+			label.classed("active", false);
+		}
+
+		function mousemove() {
+			displayTime(timeScale.invert(d3.mouse(this)[0]));
+		}
+	}
+
+	function TimeTransition() {
+		svg.transition()
+			.duration(5000)
+			.ease("linear")
+			.tween("time", tweenTime);
+	}
+	
+	// Tweens the entire chart by first tweening the time, and then the data.
+	// For the interpolated data, the dots and label are redrawn.
+	function tweenTime() {
+		return function(t) { displayTime(timeTweenScale.invert(t)); };
+	}
+
+	// Updates the display to show the specified time.
+	function displayTime(time) {
+		dot.data(interpolateData(time), key).call(position).sort(SmallestOnTop);
+		label.text(TimeFormat(time));
+	}
+
+	// Interpolates the dataset for the given (fractional) date.
+	function interpolateData(time) {
+//		alert("interpolateData");
+		return agents.map(function(d) {
+			return {
+				name: d.name,
+				team: d.team,
+				att: interpolateValues(d.att, time),
+				fcr: interpolateValues(d.fcr, time)
+			};
+		});
+	}
+
+	// Finds (and possibly interpolates) the value for the specified time.
+	function interpolateValues(values, time) {
+		var i = bisect.left(values, time),
+		    a = values[i];
+
+		if (i == 0) {
+			return values[i][1];
+		} else if (i == values.length) {
+			return values[values.length - 1][1];
+		}
+
+		var b = values[i - 1],
+			t = (time - a[0]) / (b[0] - a[0]);
+		return a[1] * (1 - t) + b[1] * t;
+	}
+});
+
+</script>
