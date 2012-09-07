@@ -2,9 +2,13 @@
 <meta charset="utf-8">
 <title>Radiator</title>
 <style>
-
-	@import url(../style.css?20120427);
-
+	.Job {
+		stroke: #000;
+	}
+	
+	.Test {
+		fill: #ff0000;
+	}
 </style>
 
 <header>
@@ -14,163 +18,99 @@
 <p id="radiator"></p>
 
 <script src="http://d3js.org/d3.v2.js?2.8.1"></script>
-<script>
 
+<script>
+var	margin = {top: 20, right: 20, bottom: 20, left: 100},
+width = 960 - margin.left - margin.right,
+height = 500 - margin.top - margin.bottom;
+
+function x(d) { return 0.5; }
+function y(d) { return 0.5; }
+function w(d) { return .5; }
+function h(d) { return .5; }
+function age(d) { return 1; }
+function color(d) { return 1; }
+
+var xScale = d3.scale.linear().domain([0, 1]).range([0, width]),
+	yScale = d3.scale.linear().domain([0, 1]).range([height, 0]),
+	widthScale = d3.scale.linear().domain([0, 1]).range([0, width]),
+	heightScale = d3.scale.linear().domain([0, 1]).range([0, height]),
+	colorScale = d3.scale.category10();
+
+var svg = d3.select("#radiator")
+	.append("svg")
+	.attr("width", width + margin.left + margin.right)
+	.attr("height", height + margin.top + margin.bottom)
+	.append("g")
+	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+//var test = svg.append("rect")
+//	.attr("class", "Test")
+//	.attr("x", xScale(0))
+//	.attr("y", yScale(1))
+//	.attr("width", widthScale(1))
+//	.attr("height", heightScale(1));
 
 // Load the data.
 d3.json("./jobs.php", function(Jobs) {
+	
+	var Revisions = new Array();
+	var z = new Array();
 
-	function TimeConvert(d) {
-		d[0] = new Date(d[0]);
-	}
-	
-	function TimeSort(d1, d2) {
-		return d1[0] - d2[0];
-	}
-	
-	var Revisions = Jobs.map(
+	Jobs.map(
 		function(d) {
-			return {
-				revision: d.revision
-			};
+			d.Date = new Date(1000*d.Date);
+
+			var i = z.indexOf(d.Revision);
+			if (i<0) {
+				i = z.push(d.Revision) - 1;
+				var Revision = {
+					Revision: d.Revision,
+					Jobs: new Array()
+				};
+				Revisions.push(Revision);
+			}
+			Revisions[i].Jobs.push(d);
 		}
 	);
+//	alert(z);
+//	alert(Revisions[1].Jobs[0].Name);
+//	alert(Revisions[1].Jobs[1].Name);
+	var RevisionCount = Revisions.length;
+	var JobCount = 0;
+	Revisions.map(
+		function(d) {
+			JobCount = Math.max(JobCount, d.Jobs.length);
+		}
+	);
+	alert(RevisionCount);
+	alert(JobCount);
 
-	svg.append("rect")
-		.attr("class", "hidden")
-		.attr("x", 0)
-		.attr("y", 0)
-		.attr("width", width)
-		.attr("height", height)
-		.on("click", TimeTransition);
+	xScale.domain([0, JobCount]);
+	yScale.domain([0, RevisionCount]);
 
-	// Add a dot per nation. Initialize the data at StartWeek, and set the colors.
-	var dot = svg.append("g")
-		.attr("class", "dots")
-		.selectAll(".dot")
-		.data(interpolateData(StartWeek))
-		.enter().append("circle")
-		.attr("class", "dot")
+	var Jobs = svg.append("g")
+		.selectAll(".Job")
+		.data(Jobs)
+		.enter().append("rect")
+		.attr("class", "Job")
 		.style("fill", function(d) { return colorScale(color(d)); })
 		.call(position)
-		.sort(SmallestOnTop);
+		.sort(NewestOnTop);
 
-	// Add a title.
-	 dot.append("title")
-		.text(function(d) { return d.name; });
-		
-	// Add an overlay for the time label.
-	var box = label.node().getBBox();
-
-	var overlay = svg.append("rect")
-		.attr("class", "overlay")
-		.attr("x", box.x)
-		.attr("y", box.y)
-		.attr("width", box.width)
-		.attr("height", box.height)
-		.on("mouseover", enableInteraction);
-
-	// Start a transition that interpolates the data based on time.
-	TimeTransition();
-//	svg.transition()
-//		.duration(5000)
-//		.ease("linear")
-//		.tween("time", tweenTime);
-
-	// Positions the dots based on data.
-	function position(dot) {
-		dot	.attr("cx", function(d) { return xScale(x(d)); })
-			.attr("cy", function(d) { return yScale(y(d)); })
-			.attr("r", function(d) { return radiusScale(radius(d)); });
+	function position(Job) {
+		Job	.attr("x", function(d) { return xScale(x(d)); })
+			.attr("y", function(d) { return yScale(y(d)); })
+			.attr("width", function(d) { return widthScale(w(d)); })
+			.attr("height", function(d) { return heightScale(h(d)); });
 	}
 
-	// Defines a sort order so that the smallest dots are drawn on top.
-	function SmallestOnTop(a, b) {
-		return radius(b) - radius(a);
+	function NewestOnTop(a, b) {
+		return age(b) - age(a);
 	}
 
-	// After the transition finishes, you can mouseover to change the time.
-	function enableInteraction() {
-		// Cancel the current transition, if any.
-		svg.transition().duration(0);
-//		alert("cancel");
-		
-		var timeScale = d3.time.scale()
-			.domain([StartWeek, EndWeek])
-			.range([box.x + 10, box.x + box.width - 10])
-			.clamp(true);
-	
-
-		overlay
-			.on("click", click)
-			.on("mouseover", mouseover)
-			.on("mouseout", mouseout)
-			.on("mousemove", mousemove)
-			.on("touchmove", mousemove);
-
-		function click() {
-			svg.transition().duration(0);
-		}
-		function mouseover() {
-			label.classed("active", true);
-		}
-
-		function mouseout() {
-			label.classed("active", false);
-		}
-
-		function mousemove() {
-			displayTime(timeScale.invert(d3.mouse(this)[0]));
-		}
-	}
-
-	function TimeTransition() {
-		svg.transition()
-			.duration(5000)
-			.ease("linear")
-			.tween("time", tweenTime);
-	}
-	
-	// Tweens the entire chart by first tweening the time, and then the data.
-	// For the interpolated data, the dots and label are redrawn.
-	function tweenTime() {
-		return function(t) { displayTime(timeTweenScale.invert(t)); };
-	}
-
-	// Updates the display to show the specified time.
-	function displayTime(time) {
-		dot.data(interpolateData(time), key).call(position).sort(SmallestOnTop);
-		label.text(TimeFormat(time));
-	}
-
-	// Interpolates the dataset for the given (fractional) date.
-	function interpolateData(time) {
-//		alert("interpolateData");
-		return agents.map(function(d) {
-			return {
-				name: d.name,
-				team: d.team,
-				att: interpolateValues(d.att, time),
-				fcr: interpolateValues(d.fcr, time)
-			};
-		});
-	}
-
-	// Finds (and possibly interpolates) the value for the specified time.
-	function interpolateValues(values, time) {
-		var i = bisect.left(values, time),
-		    a = values[i];
-
-		if (i == 0) {
-			return values[i][1];
-		} else if (i == values.length) {
-			return values[values.length - 1][1];
-		}
-
-		var b = values[i - 1],
-			t = (time - a[0]) / (b[0] - a[0]);
-		return a[1] * (1 - t) + b[1] * t;
-	}
+//	 Jobs.append("title")
+//		.text(function(d) { return "Title"; });
 });
 
 </script>

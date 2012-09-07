@@ -5,12 +5,14 @@ class Job
 	public $Name;
 	public $Revision;
 	public $Status;
+	public $Date;
 	
 	public function __construct($Name, $Revision, $Status)
 	{
 		$this->Name = $Name;
 		$this->Revision = $Revision;
 		$this->Status = $Status;
+		$this->Date = strtotime('+1 day');
 	}
 }
 
