@@ -1,21 +1,38 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>Radiator</title>
-<style>
+<style><![CDATA[
+	.Revision {
+		stroke: #000;
+	}
+	
 	.Job {
 		stroke: #000;
 	}
 	
+	text {
+		font-family: "Helvetica Neue", Helvetica, sans-serif;
+		font-weight: 300;
+		stroke: #ffffff;
+		fill: #ffffff;
+		letter-spacing: 1px;
+		margin: .3em 0 .1em 0;
+	}
+	
+	text.JobTitle {
+	}
+	text.JobDate {
+		font-weight: 100;
+	}
+
+
+
 	.Test {
 		fill: #ff0000;
 	}
-</style>
+]]></style>
 
-<header>
-	<aside>Radiator</aside>
-</header>
-
-<p id="radiator"></p>
+<div id="radiator"></div>
 
 <script src="http://d3js.org/d3.v2.js?2.8.1"></script>
 
@@ -24,93 +41,184 @@ var	margin = {top: 20, right: 20, bottom: 20, left: 100},
 width = 960 - margin.left - margin.right,
 height = 500 - margin.top - margin.bottom;
 
-function x(d) { return 0.5; }
-function y(d) { return 0.5; }
-function w(d) { return .5; }
-function h(d) { return .5; }
-function age(d) { return 1; }
-function color(d) { return 1; }
+width = window.innerWidth;
+height = window.innerHeight;
 
-var xScale = d3.scale.linear().domain([0, 1]).range([0, width]),
-	yScale = d3.scale.linear().domain([0, 1]).range([height, 0]),
-	widthScale = d3.scale.linear().domain([0, 1]).range([0, width]),
-	heightScale = d3.scale.linear().domain([0, 1]).range([0, height]),
-	colorScale = d3.scale.category10();
+function x(d, i) { return i; }
+function y(d, i) { return i; }
+function w(d, i) { return .5; }
+function h(d) { return .5; }
+function age(d) { return d.Date; }
+function color(d) { return d.Status; }
+
+var xScale = d3.scale.sqrt().domain([0, 1]).range([0, 0.2*width]),
+	yScale = d3.scale.linear().domain([0, 1]).range([0, height]),
+	wScale = d3.scale.linear().domain([0, 1]).range([0, 0.8*width]),
+	hScale = d3.scale.linear().domain([0, 1]).range([0, height]),
+	colorScale = d3.scale.ordinal().domain(["fail", "pass", "run"]).range(["#ee0000", "#00dd00", "#008800"]);
+
+function RevisionAscending(a, b) {
+	return a.Revision - b.Revision;
+}
+
+function DateAscending(a, b) {
+	return a.Date - b.Date;
+}
+
+function DateDescending(a, b) {
+	return b.Date - a.Date;
+}
 
 var svg = d3.select("#radiator")
 	.append("svg")
-	.attr("width", width + margin.left + margin.right)
-	.attr("height", height + margin.top + margin.bottom)
+	.attr("width", width)
+	.attr("height", height)
 	.append("g")
-	.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+	;
 
-//var test = svg.append("rect")
-//	.attr("class", "Test")
-//	.attr("x", xScale(0))
-//	.attr("y", yScale(1))
-//	.attr("width", widthScale(1))
-//	.attr("height", heightScale(1));
+var Jenkins = new Array();
 
 // Load the data.
-d3.json("./jobs.php", function(Jobs) {
+d3.json("./jobs.json", function(Jobs) {
+
+	Jenkins = OrganizeData(Jobs);
 	
-	var Revisions = new Array();
-	var z = new Array();
+	var JobCount = 0;
+	var RevisionCount = 0;
+	Jenkins.Pipelines.map(
+		function(d) {
+			RevisionCount = Math.max(RevisionCount, d.Revisions.length);
+			d.Revisions.map(
+				function(d) {
+					JobCount = Math.max(JobCount, d.Jobs.length);
+				}
+			);
+		}
+	);
+
+	var tree = d3.layout.tree()
+	    .children(function(d) {
+		    if (d.Pipelines) {return d.Pipelines;}
+		    if (d.Revisions) {return d.Revisions;}
+		    if (d.Jobs) {return d.Jobs;}
+		})
+	;
+	
+	var nodes = tree.nodes(Jenkins);
+
+	var JobNodes = nodes.filter(function(d) {
+		return d.Job;
+	});
+
+	xScale.domain([RevisionCount-1, 0]);
+	yScale.domain([0, Jenkins.Pipelines.length]);
+	hScale.domain([0, Jenkins.Pipelines.length]);
+
+	Paint();
+});
+
+function Paint() {
+	var Pipelines = svg.selectAll(".Pipeline")
+		.data(Jenkins.Pipelines)
+		.enter().append("g")
+		.attr("class", "Pipeline")
+		.attr("transform", function(d) {return "translate(0,"+yScale(d.Sequence)+")"})
+	;
+
+	var Revisions = Pipelines.selectAll(".Revision")
+		.data(function (d) { return d.Revisions; })
+		.enter().append("g")
+		.attr("class", "Revision")
+		.attr("transform", function(d) { return "translate("+xScale(d.Sequence)+",0)"})
+		.sort(RevisionAscending)
+	;
+
+	Revisions.append("rect")
+		.style("fill", function(d) { return colorScale(color(d.Jobs[0])); })
+		.style("stroke", "#000000")
+		.attr("width", function(d) { return wScale(1); })
+		.attr("height", function(d) { return hScale(1); })
+	;
+
+	Revisions.append("text")
+		.style("font-size", "18")
+		.attr("x", 8)
+		.attr("y", 20)
+		.text(function(d) { return d.parent.Pipeline; })
+	;
+
+	Revisions.append("text")
+		.style("font-size", "16")
+		.attr("x", 8)
+		.attr("y", 40)
+		.text(function(d) { return "SVN: "+d.Revision; })
+	;
+
+	Revisions.append("text")
+		.attr("class", "JobTitle")
+		.style("font-size", "14")
+		.attr("x", 8)
+		.attr("y", 60)
+		.text(function(d) { return "Job: "+d.Jobs[0].Job; })
+	;
+
+	Revisions.append("text")
+		.attr("class", "JobDate")
+		.style("font-size", "12")
+		.attr("x", 8)
+		.attr("y", 80)
+		.text(function(d) { return Date2String(d.Jobs[0].Date); })
+	;
+
+	function Date2String(date)
+	{
+		return date.getMonth()+"/"+date.getDate()+" "+date.getHours()+":"+date.getMinutes()+":"+date.getSeconds();
+	}
+}
+
+function OrganizeData(Jobs)
+{
+	Jobs.sort(DateDescending);
+
+	var PipelineNameRegex = new RegExp(/^(\w+)(\.\w+)*(\.\w+)$/);
+
+	var Jenkins = {
+		Pipelines: new Array(),
+		PipelineNames: new Array()
+	};
 
 	Jobs.map(
 		function(d) {
 			d.Date = new Date(1000*d.Date);
+			d.Pipeline = d.Job.replace(PipelineNameRegex, "$1$3");
+			
+			var p = Jenkins.PipelineNames.indexOf(d.Pipeline);
+			if (p<0) {
+				p = Jenkins.PipelineNames.push(d.Pipeline) - 1;
+				var Pipeline = {
+					Pipeline: d.Pipeline,
+					Sequence: p,
+					Revisions: new Array(),
+					RevisionNames: new Array()
+				};
+				Jenkins.Pipelines.push(Pipeline);
+			}
 
-			var i = z.indexOf(d.Revision);
-			if (i<0) {
-				i = z.push(d.Revision) - 1;
+			var r = Jenkins.Pipelines[p].RevisionNames.indexOf(d.Revision);
+			if (r<0) {
+				r = Jenkins.Pipelines[p].RevisionNames.push(d.Revision) - 1;
 				var Revision = {
 					Revision: d.Revision,
+					Sequence: r,
 					Jobs: new Array()
 				};
-				Revisions.push(Revision);
+				Jenkins.Pipelines[p].Revisions.push(Revision);
 			}
-			Revisions[i].Jobs.push(d);
+			j = Jenkins.Pipelines[p].Revisions[r].Jobs.push(d) - 1;
+			d.Sequence = j;
 		}
 	);
-//	alert(z);
-//	alert(Revisions[1].Jobs[0].Name);
-//	alert(Revisions[1].Jobs[1].Name);
-	var RevisionCount = Revisions.length;
-	var JobCount = 0;
-	Revisions.map(
-		function(d) {
-			JobCount = Math.max(JobCount, d.Jobs.length);
-		}
-	);
-	alert(RevisionCount);
-	alert(JobCount);
-
-	xScale.domain([0, JobCount]);
-	yScale.domain([0, RevisionCount]);
-
-	var Jobs = svg.append("g")
-		.selectAll(".Job")
-		.data(Jobs)
-		.enter().append("rect")
-		.attr("class", "Job")
-		.style("fill", function(d) { return colorScale(color(d)); })
-		.call(position)
-		.sort(NewestOnTop);
-
-	function position(Job) {
-		Job	.attr("x", function(d) { return xScale(x(d)); })
-			.attr("y", function(d) { return yScale(y(d)); })
-			.attr("width", function(d) { return widthScale(w(d)); })
-			.attr("height", function(d) { return heightScale(h(d)); });
-	}
-
-	function NewestOnTop(a, b) {
-		return age(b) - age(a);
-	}
-
-//	 Jobs.append("title")
-//		.text(function(d) { return "Title"; });
-});
-
+	
+	return Jenkins;
+}
 </script>
