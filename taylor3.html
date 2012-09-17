@@ -73,8 +73,8 @@ var zzz = d3.time.format("%b %d, %Y");
 //alert(xStartWeek);
 
 
-var StartWeek = new Date("1/1/2011"),
-	EndWeek = new Date("12/31/2013");
+var StartWeek = new Date("8/1/2005"),
+	EndWeek = new Date("8/31/2005");
 var timeTweenScale = d3.time.scale()
 	.domain([StartWeek, EndWeek])
 	.range([0, 1]);
@@ -87,7 +87,7 @@ var margin = {top: 20, right: 20, bottom: 20, left: 100},
 	height = 600;
 
 // Various scales.
-var xScale = d3.scale.linear().domain([0, 1000]).range([0, width]),
+var xScale = d3.scale.linear().domain([0, 10000]).range([0, width]),
     yScale = d3.scale.linear().domain([0, 1]).range([height, 0]),
     radiusScale = d3.scale.linear().domain([0, 10]).range([0, 10]),
     colorScale = d3.scale.category10();
@@ -145,8 +145,8 @@ var label = svg.append("text")
 // Load the data.
 //d3.json("./agents3.json", function(agents) {
 //d3.json("./agentsmack.json", function(agents) {
-//d3.json("http://dt06017:8080/", function(agents) {
-d3.json("http://192.168.17.139/dev/sandbox/Portal/Developer/dbrown/git/D3js/agents.php", function(agents) {
+d3.json("http://dt06017:8080/", function(agents) {
+//d3.json("http://192.168.17.139/dev/sandbox/Portal/Developer/dbrown/git/D3js/agents.php", function(agents) {
 
 	agents = agents.map(
 			function(d){
@@ -159,10 +159,29 @@ d3.json("http://192.168.17.139/dev/sandbox/Portal/Developer/dbrown/git/D3js/agen
 			}
 		);
 
+	function Early(a, b) {
+		return a[0] - b[0];
+	}
+
+	agents.map(
+		function(d){
+			d.att.sort(Early);
+			d.fcr.sort(Early);
+		}
+	);
+
 	// A bisector since many nation's data is sparsely-defined.
 //	var bisect = d3.bisector(function(d) { return new Date(d[0]); });
 	var bisect = d3.bisector(function(d) { return d[0]; });
 	var bisectR = d3.bisector(function(d) { return d[0]; }).right;
+
+	svg.append("rect")
+		.attr("class", "hidden")
+		.attr("x", 0)
+		.attr("y", 0)
+		.attr("width", width)
+		.attr("height", height)
+		.on("click", TimeTransition);
 
 	// Add a dot per nation. Initialize the data at StartWeek, and set the colors.
 	var dot = svg.append("g")
@@ -178,14 +197,6 @@ d3.json("http://192.168.17.139/dev/sandbox/Portal/Developer/dbrown/git/D3js/agen
 	// Add a title.
 	 dot.append("title")
 		.text(function(d) { return d.name; });
-
-	svg.append("rect")
-		.attr("class", "hidden")
-		.attr("x", 0)
-		.attr("y", 0)
-		.attr("width", width)
-		.attr("height", height)
-		.on("click", TimeTransition);
 		
 	// Add an overlay for the time label.
 	var box = label.node().getBBox();
