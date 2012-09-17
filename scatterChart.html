@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<link href="../nvd3/src/nv.d3.css" rel="stylesheet" type="text/css">
+
+<style>
+
+body {
+  overflow-y:scroll;
+  margin: 0;
+  padding: 0;
+}
+
+svg {
+  overflow: hidden;
+}
+
+div {
+  border: 0;
+  margin: 0;
+}
+
+/*
+#offsetDiv {
+  margin-left: 100px;
+  margin-top: 100px;
+}
+*/
+
+
+#test1 {
+  margin: 0;
+}
+
+.nvd3 .nv-axis line {
+  fill: none;
+  stroke: #000;
+  stroke-opacity: 1;
+  shape-rendering: crispEdges;
+}
+
+
+</style>
+
+<body>
+
+<div id="offsetDiv">
+	<div id="test1" class="chartWrap">
+	</div>
+</div>
+
+<script src="../nvd3/lib/d3.v2.js"></script>
+<script src="../nvd3/lib/fisheye.js"></script>
+<script src="../nvd3/nv.d3.js"></script>
+<script src="../nvd3/src/tooltip.js"></script>
+<script src="../nvd3/src/utils.js"></script>
+<script src="../nvd3/src/models/legend.js"></script>
+<script src="../nvd3/src/models/axis.js"></script>
+<script src="../nvd3/src/models/distribution.js"></script>
+<script src="../nvd3/src/models/scatter.js"></script>
+<script src="../nvd3/src/models/scatterChart.js"></script>
+<script><!--
+
+var svg = d3.select("#test1")
+	.append("svg");
+
+//Format A
+nv.addGraph(function() {
+	var xScale = d3.scale.linear().domain([0, 1000]).range([0, 800]),
+		yScale = d3.scale.linear().domain([0, 1]).range([800, 0]);
+
+	var chart = nv.models.scatterChart()
+		.showDistX(true)
+		.showDistY(true)
+		.height(800)
+		.width(800)
+		.tooltip(function(key, name) { return '<h3>' + key + '</h3>' })
+		.color(d3.scale.category10().range());
+
+	chart.scatter
+		.forceY([0,1])
+		.forceX([0,1000])
+		.sizeDomain([0,1])
+		.sizeRange([1, 500]);
+
+    chart.xAxis
+    	.tickFormat(d3.format(',d'));
+	chart.yAxis
+		.tickFormat(d3.format('%'));
+
+	
+//	alert(chart.xAxis.tickFormat);
+//	svg.datum(randomData(4,40))
+//	svg.datum(getAgents())
+//		.transition().duration(500)
+//		.call(chart);
+
+	d3.json("./agents3.json", function(agents) {
+		var data = [];
+		data.push({
+			key: 'Group 1',
+			values: []
+		});
+		data[0].values = agents.map(function(d) {
+			return {
+				x: d.att[0][1],
+				y: d.fcr[0][1],
+				name: d.name,
+				size: 1,
+				shape: 'cirlce'
+			};
+		});
+
+		svg	.datum(data)
+			.transition().duration(500)
+			.call(chart);
+	});
+		
+	nv.utils.windowResize(chart.update);
+
+	return chart;
+});
+
+//getAgents();
+//debug(getAgents());
+//debug(randomData(1,5));
+
+function getAgents() {
+
+}
+		
+function randomData(groups, points) { //# groups,# points per group
+  var data = [],
+      shapes = ['circle', 'cross', 'triangle-up', 'triangle-down', 'diamond', 'square'],
+      random = d3.random.normal();
+
+  for (i = 0; i < groups; i++) {
+    data.push({
+      key: 'Group ' + i,
+      values: []
+    });
+
+    for (j = 0; j < points; j++) {
+      data[i].values.push({
+        x: random(), 
+        y: random(), 
+        size: Math.random(), 
+        shape: shapes[j % 6]
+      });
+    }
+  }
+
+  return data;
+}
+
+
+
+--></script>
