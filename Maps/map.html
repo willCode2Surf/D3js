@@ -4,6 +4,9 @@
 		<meta name="Austin Addresses" content="initial-scale=1.0, user-scalable=no"/>
 		<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=true"></script>
 		<script type="text/javascript" src="http://mbostock.github.com/d3/d3.js?1.29.1"></script>
+		<script type="text/javascript" src="http://code.jquery.com/jquery-1.8.1.min.js"></script>
+		<script src="https://raw.github.com/andris9/jStorage/master/jstorage.js"></script>
+		
 		<style type="text/css">
 
 html, body, #map {
@@ -18,14 +21,15 @@ html, body, #map {
 }
 
 .addresses svg {
-	width: 60px;
-	height: 30px;
-	padding-right: 100px;
 	font: 10px sans-serif;
 }
 
+.addresses rect {
+	opacity: 0.2;
+}
+
 .addresses circle {
-	fill: red;
+	opacity: 0.8;
 	stroke: black;
 	stroke-width: 0.5px;
 }
@@ -33,8 +37,10 @@ html, body, #map {
 .addresses text {
 	font-family: "Helvetica Neue", Helvetica, sans-serif;
 	font-weight: 400;
-	stroke: #ff0000;
-	fill: #ff0000;
+	stroke: #000000;
+	stroke-opacity: 0.6;
+	fill: #000000;
+	opacity: 0.8;
 	letter-spacing: 1px;
 	margin: .3em 0 .1em 0;
 }
@@ -44,13 +50,7 @@ html, body, #map {
 	<body>
 		<div id="map"></div>
 		<script type="text/javascript">
-
-// Create the Google Map…
-var map = new google.maps.Map(d3.select("#map").node(), {
-	zoom: 11,
-	center: new google.maps.LatLng(30.35, -97.7),
-	mapTypeId: google.maps.MapTypeId.TERRAIN
-});
+var map = new google.maps.Map(d3.select("#map").node());
 
 //var traffic = new google.maps.TrafficLayer();
 //traffic.setMap(map);
@@ -61,71 +61,224 @@ var map = new google.maps.Map(d3.select("#map").node(), {
 //var bicycle = new google.maps.BicyclingLayer();
 //bicycle.setMap(map);
 
-var CircleRadiusScale = d3.scale.pow().exponent(3).domain([0, 15]).range([1, 7]);
+var CircleRadiusScale = d3.scale.pow().exponent(3).domain([0, 15]).range([2, 7]);
+//var circleColorScale = d3.scale.ordinal().domain(["POR", "SRV", "DA", "SALES", "BUS", "SQA", "EXEC"]).range(["#ee0000", "#00dd00", "#008800"]);
+var circleColorScale = d3.scale.category10();
 var TextSizeScale = d3.scale.pow().exponent(3).domain([0, 15]).range([1, 25]);
+var sumLatitude = 0;
+var sumLongitude = 0;
 
-// Load the address data.
-d3.json("addresses.json", function(data) {
+//Logging function
+function log(message) {
+	var now = new Date();
+	console.log(now.toTimeString()+", "+now.getMilliseconds()+": "+message);
+}
+
+d3.csv("./addresses.csv", function(data) {
+	console.log(data);
+	var	geocoder = new google.maps.Geocoder(),
+		geocodeCounter = 0, //Used to track how many geocode requests have been made.
+		codedAddressCount = 0; //Used to track how many CSV addresses have been given a geocode.
+
+	function getName(d) {
+		return d["First Name"]+" "+d["Last Name"];
+	}
 	
-	var overlay = new google.maps.OverlayView();
+	function getAddressString(d) {
+		return d["Address Line1"]+", "+d["City"]+", "+d["State"]+", "+d["Zip"];
+	}
 
-  // Add the container when the overlay is added to the map.
-	overlay.onAdd = function() {
-		var layer = d3.select(this.getPanes().overlayLayer).append("div")
-			.attr("class", "addresses");
-
-		overlay.draw = function() {
-			var	projection = this.getProjection(),
-				padding = 15;
-
-			var newMarkers = layer.selectAll("svg")
-				.data(data)
-				.enter().append("svg:svg")
-				.attr("class", "marker")
-			;
-			newMarkers.append("svg:circle");
-			newMarkers.append("svg:text");
-			
-			var markers = layer.selectAll("svg")
-				.each(transformPosition)
-			;
-			
-			markers.selectAll("circle")
-				.attr("r", function(d) {return CircleRadiusScale(map.getZoom());})
-				.attr("cx", padding)
-				.attr("cy", padding)
-			;
-
-			markers.selectAll("text")
-				.attr("x", padding + 7)
-				.attr("y", padding)
-				.attr("dy", ".31em")
-				.style("font-size", function(d) {return TextSizeScale(map.getZoom());})
-				.text(function(d) { return d.name; })
-			;
-
-			function transformPosition(d) {
-				coordinates = projection.fromLatLngToDivPixel(d.LatLng);
-				d3.select(this)
-					.style("left", (coordinates.x - padding) + "px")
-					.style("top", (coordinates.y - padding) + "px");
-			}
-		};
-	};
-
-
-	var geocoder = new google.maps.Geocoder();
-	data.map(function(d, i) {
-		geocoder.geocode({address: d.address}, function(r,s) {
-			data[i].LatLng = new google.maps.LatLng(r[0].geometry.location.lat(), r[0].geometry.location.lng());
-			if (i == data.length - 1) {
-				//Now that whole array has been updated with lat and lng, bind the overlay to the map.
-				overlay.setMap(map);
-			}
-		});
+	//Get geo corrdinates for all addresses.
+	data.map(function(d) {
+		var address = getAddressString(d);
+		//Look for address' geo coordinates found in local storage, and if not found add them to local storage, and then geo code the address.
+		if ($.jStorage.get(address)) {
+			log("found geocode for "+address);
+			geocodeAddress(d)
+		} else {
+			//Use setTimeout to limit pace of requests to google.
+			setTimeout(function() {
+				geocoder.geocode({address: address}, function(r,s) {
+					switch(s) {
+					case google.maps.GeocoderStatus.OK:
+						log("geocode ok for "+address);
+						//Add the "LatLng" object from google for this address to local storage, expiring in 5 seconds.
+						$.jStorage.set(address, {lat: r[0].geometry.location.lat(), lng: r[0].geometry.location.lng()}, {TTL:86400000});
+						geocodeAddress(d)
+						break;
+					default:
+						log("geocode error ("+s+") for "+address);
+					}
+				});
+			}, 750*geocodeCounter);//Pace is one request every 3/4 of a second.
+			geocodeCounter += 1;
+		}
 	});
-});
 
+	//Pull coordinates from local storage and use to add google LatLng object to the datum.
+	function geocodeAddress(d) {
+		codedAddressCount += 1;
+		var address = $.jStorage.get(getAddressString(d));
+		d.LatLng = new google.maps.LatLng(address.lat, address.lng);
+		//Sum lat and lng for calculating center of all addresses.
+		sumLatitude += d.LatLng.lat();
+		sumLongitude += d.LatLng.lng();
+		log("code address "+d.LatLng+", count="+codedAddressCount+" of "+data.length);
+
+		//If all the addresses have been geocoded then center the map, and overlay the addresses.
+		if (codedAddressCount == data.length) {
+			log("READY TO MAP");
+			console.log(data);
+			map.setOptions({
+				center: new google.maps.LatLng(sumLatitude/data.length, sumLongitude/data.length),
+				zoom: 11,
+				mapTypeId: google.maps.MapTypeId.ROADMAP,
+				mapTypeControlOptions: {style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR}
+			});
+			OverlayAddresses();
+		}
+	}
+
+	function OverlayAddresses() {
+		var overlay = new google.maps.OverlayView();
+
+	  // Add the container when the overlay is added to the map.
+		overlay.onAdd = function() {
+			var layer = d3.select(this.getPanes().overlayImage).append("g")
+				.attr("class", "addresses");
+
+			google.maps.event.addListener(map, "maptypeid_changed", function() {
+				layer.selectAll("svg").selectAll("text")
+					.style("fill", colorText)
+					.style("stroke", colorText)
+					.style("opacity", opacityText)
+					.style("stroke-opacity", opacityText)
+			    ;
+			});
+
+			function xOffsetSVG(d) {
+				return 2*rCircle(d);
+			}
+			
+			function yOffsetSVG(d) {
+				return heightSVG(d)/2;
+			}
+			
+			function widthSVG(d) {
+				return d.BBox.width + xOffsetText(d) + xOffsetSVG(d);
+			}
+			
+			function heightSVG(d) {
+				return 1.2*d.BBox.height;
+			}
+
+			function xOffsetText(d) {
+				return xOffsetSVG(d) + 1.5*rCircle(d);
+			}
+
+			function rCircle(d) {
+				return heightSVG(d)/2 - 0.6;//Subtract just a little more than the stroke width.
+			}
+
+			function colorText(d) {
+				switch (map.getMapTypeId()) {
+					case google.maps.MapTypeId.SATELLITE:
+					case google.maps.MapTypeId.HYBRID:
+						return "#ffffff";
+						break;
+					default:
+						return "#000000";
+				}
+			}
+
+			function opacityText(d) {
+				switch (map.getMapTypeId()) {
+					case google.maps.MapTypeId.SATELLITE:
+					case google.maps.MapTypeId.HYBRID:
+						return 0.8;
+						break;
+					default:
+						return 0.5;
+				}
+			}
+
+			overlay.draw = function() {
+				var	projection = this.getProjection(),
+					padding = 15;
+
+				var newMarkers = layer.selectAll("svg")
+					.data(data)
+					.enter().append("svg:svg")
+					.attr("class", "marker")
+				;
+				
+				//Add rectangles, circles, and text to any newly created top level SVG elements.
+//				newMarkers.append("svg:rect");
+				newMarkers.append("svg:circle");
+				newMarkers.append("svg:text");
+
+				
+				var markers = layer.selectAll("svg");
+
+				//Set the text and size
+				markers.selectAll("text")
+					.style("font-size", function(d) {return TextSizeScale(map.getZoom());})
+					.text(getName)
+				;
+
+				//Get the bounding bo for the text.
+				markers.selectAll("text")
+					.each(function(d) {d.BBox = this.getBBox();})
+					.attr("x", function(d) {return xOffsetText(d);})
+					.attr("y", yOffsetSVG)
+					.attr("dy", ".31em")
+					.style("fill", colorText)
+					.style("stroke", colorText)
+					.style("opacity", opacityText)
+					.style("stroke-opacity", opacityText)
+				;	
+
+				//Adjust the top level SVG elements.
+				markers
+					.each(transformPosition)
+					.attr("width", function(d) {return widthSVG(d);})
+					.attr("height", function(d) {return heightSVG(d);})
+				;
+
+				//Adjust the circles.
+				markers.selectAll("circle")
+					.attr("r", function(d) {return rCircle(d);})
+					.attr("cx", function(d) {return xOffsetSVG(d);})
+					.attr("cy", function(d) {return yOffsetSVG(d);})
+					.style("fill", function(d) {return circleColorScale(d.Team);})
+				;
+
+				//Adjust the rectangles.
+				markers.selectAll("rect")
+					.attr("x", 0)
+					.attr("y", 0)
+					.attr("width", function(d) {return widthSVG(d);})
+					.attr("height", function(d) {return heightSVG(d);})
+					.style("fill", function(d) {return circleColorScale(d.Team);})
+				;
+
+				//Function to move the top level SVG elements to the correct spot given the projection.
+				function transformPosition(d, i) {
+					coordinates = projection.fromLatLngToDivPixel(d.LatLng);
+					if (i==0) {
+						console.log(d);
+						console.log(coordinates);
+					}
+					d3.select(this)
+						.style("left", (coordinates.x - xOffsetSVG(d)))
+						.style("top", (coordinates.y - yOffsetSVG(d)));
+				}
+			};
+		};
+
+		overlay.setMap(map);
+	}
+});
 		</script>
 	</body>
 </html>
