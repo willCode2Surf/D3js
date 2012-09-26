@@ -1,0 +1,155 @@
+@charset "UTF-8";
+/* CSS Document */
+
+a.active, a.visited, a {
+	color:#4b4b4b;
+	text-decoration:none;
+}
+
+body {
+	font-family: 'PT Sans Narrow', 'Arial', sans-serif;
+	font-size: 14px;
+	background-color:#f4f4f4;
+	color:#343434;
+	margin:0;
+	padding:0;
+}
+
+#msgs {
+	background-image:url(../images/chat.png);
+	background-position:0 0;
+	background-repeat:no-repeat;
+	position:absolute;
+	display:none;
+	padding-left:30px;
+	top:1px;
+	left:500px;
+	font-weight:200;
+	color:#cc333f;
+	width:200px;
+	height:30px;
+	z-index:20;
+	font-size:95%;
+	line-height:1;
+}
+
+.categoryTitle {
+	font-weight:bold;
+	color:#CC333F;
+	font-size:1em;
+	text-transform:uppercase;
+}
+
+p {
+	font-color:#4b4b4b;
+	font-size:14px;
+	line-height:150%;
+}
+
+h1 {
+	padding-bottom:0;
+	margin-bottom:0;
+	font-weight:400;
+	padding-left:70px;
+}
+
+#visualization_container {
+	width:750px;
+	height:500px;
+	padding:4px;
+	background-color:#f4f4f4;
+	color:#343434;
+	float:left; 
+}
+
+#scrollPaneContent {
+	font-size:80%;
+	outline:0;
+	width:230px;
+	padding:10px;
+	height:490px;
+	float:left;
+}
+
+#visualization {
+	padding:0px;
+	border:0px solid black;
+	width:800px;
+	height:500px;
+}
+
+rect {
+	fill-opacity:0;
+	shape-rendering: crispEdges;
+}
+
+.x line, .y line {
+	stroke: #ccc;
+	shape-rendering: crispEdges;
+}
+
+.control, .control_zoners, .control_seaters, .control_jumpers, .control_select_all {
+	margin:0;
+	padding:0;
+}
+
+/*@-moz-document url-prefix() {
+	.control, .control_zoners, .control_seaters, .control_jumpers, .control_select_all {
+		margin:2.5px;
+	}
+}*/
+
+.checked {
+	background-image:url(chk_on.png);
+	background-repeat:no-repeat;
+}
+
+.unchecked {
+	background-image:url(chk_off.png);
+	background-repeat:no-repeat;
+}
+
+label {
+	margin-bottom:2px;
+	margin-right:3px;
+	padding-left:3px;
+}
+
+.scrollgeneric {
+	font-size: 1px;
+	position: absolute;
+	top: 0; left: 0;
+}
+
+.vscrollerbase {
+	width: 8px;
+	padding:0px;
+	background-color: #e5dac4;
+}
+
+.vscrollerbar {
+	width: 8px;
+	background-color: #3f3f3f;
+}
+
+.scrollerjogbox {
+	width: 12px;
+	height: 10px;
+	top: auto; left: auto;
+	bottom: 0px; right: 0px;
+	background-color: #e5dac4;
+}
+
+
+#scrollPane {
+	width: 190px;
+	height: 415px;
+	overflow: auto;
+	position: relative;
+	margin: 0;
+	padding:0;
+	margin-top:0;
+	border: 0;
+	margin-left:auto;
+	margin-right:auto;
+}
