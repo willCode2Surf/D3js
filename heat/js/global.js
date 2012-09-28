@@ -94,16 +94,18 @@ function getUrlVars()
 function setContent(by_what) {	
 		clearCanvas();
 		
-		var content = "<div style='float:left;width:110px'>";
+		var content = "";
+		content += "<div style='float:left;width:110px;padding-right:10px;'>";
 		content += "<span class='categoryTitle'>Jump around a lot</span><br />";
 		content += "<div style='border-left:2px solid #424254;position:relative;left:1px;top:0'>";
 		content += "<label><input type='checkbox' class='control_select_all' id='all_jumpers' style='vertical-align: middle; margin: 0px' /> Visualize all</label><br />";
 		for(i=0;i<names_jumpers.length;i++) {
 			content += "<label><input type='checkbox' name='control_jumpers' class='control' id='" + names_jumpers[i] + "' /> <span id='text_" + names_jumpers[i] + "'>" + names_jumpers[i] + "</span></label><br />";
 		}
-		content += "</div>";
+		content += "</div></div>";
 
-		content += "<br /><span class='categoryTitle'>Prefer a single seat</span><br />";
+		content += "<div style='float:left;width:110px;padding-right:10px;'>";
+		content += "<span class='categoryTitle'>Prefer a single seat</span><br />";
 		content += "<div style='border-left:2px solid #E8CAA4;position:relative;left:1px;top:0'>";
 		content += "<label><input type='checkbox' class='control_select_all' id='all_seaters' style='vertical-align: middle; margin: 0px' /> Visualize all</label><br />";
 		for(i=0;i<names_seaters.length;i++) {
@@ -111,7 +113,7 @@ function setContent(by_what) {
 		}
 		content += "</div></div>";
 		
-		content += "<div style='float:left;width:110px;padding-left:10px'>";
+		content += "<div style='float:left;width:110px;padding-right:10px;'>";
 		content += "<span class='categoryTitle'>Prefer a single zone</span><br />";
 		content += "<div style='border-left:2px solid #64908A;position:relative;left:1px;top:0'>";
 		content +="<label><input type='checkbox' class='control_select_all' id='all_zoners' style='vertical-align: middle; margin: 0px' /> Visualize all</label><br />";

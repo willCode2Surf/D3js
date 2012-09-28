@@ -65,7 +65,7 @@ h1 {
 #scrollPaneContent {
 	font-size:80%;
 	outline:0;
-	width:230px;
+	width:430px;
 	padding:10px;
 	height:490px;
 	float:left;
@@ -84,7 +84,7 @@ rect {
 }
 
 .x line, .y line {
-	stroke: #ccc;
+	stroke: #ff0000;
 	shape-rendering: crispEdges;
 }
 
