@@ -79,19 +79,24 @@ function log(message) {
 
 d3.csv("./addresses.csv", function(data) {
 	console.log(data);
+
+	var StorageLifetime = 86400000;
+	//$.jStorage.flush();//Uncomment to force going to google for geo coordinates.
+
 	var	geocoder = new google.maps.Geocoder(),
 		geocodeCounter = 0, //Used to track how many geocode requests have been made.
 		codedAddressCount = 0; //Used to track how many CSV addresses have been given a geocode.
 
 	function getName(d) {
-		return d["First Name"]+" "+d["Last Name"];
+//		return d["First Name"]+" "+d["Last Name"];
+		return d.Organization;
 	}
 	
 	function getAddressString(d) {
 		return d["Address Line1"]+", "+d["City"]+", "+d["State"]+", "+d["Zip"];
 	}
 
-	//Get geo corrdinates for all addresses.
+	//Get geo coordinates for all addresses. If not in local storage go get from google. 
 	data.map(function(d) {
 		var address = getAddressString(d);
 		//Look for address' geo coordinates found in local storage, and if not found add them to local storage, and then geo code the address.
@@ -108,13 +113,13 @@ d3.csv("./addresses.csv", function(data) {
 							.text("Got coordinates for "+address+" ("+codedAddressCount+" of "+data.length+")");
 						log("geocode ok for "+address);
 						//Add the "LatLng" object from google for this address to local storage, expiring in 5 seconds.
-						$.jStorage.set(address, {lat: r[0].geometry.location.lat(), lng: r[0].geometry.location.lng()}, {TTL:86400000});
+						$.jStorage.set(address, {lat: r[0].geometry.location.lat(), lng: r[0].geometry.location.lng()}, {TTL:StorageLifetime});
 						geocodeAddress(d)
 						break;
 					default:
 						log("geocode error ("+s+") for "+address);
 						d3.select("#error")
-							.text("Error getting geo coordinates from Google. Need to refresh browser.");
+							.text("Error getting geo coordinates from Google. Need to refresh browser when progress stops.");
 					}
 				});
 			}, 750*geocodeCounter);//Pace is one request every 3/4 of a second.
@@ -138,8 +143,15 @@ d3.csv("./addresses.csv", function(data) {
 			console.log(data);
 			d3.select("#progress").remove();
 			d3.select("#error").remove();
+			var center = {
+				Organization: "CENTER",
+				LatLng: new google.maps.LatLng(sumLatitude/data.length, sumLongitude/data.length),
+				shape: "square"
+			};
+			data.push(center);
 			map.setOptions({
-				center: new google.maps.LatLng(sumLatitude/data.length, sumLongitude/data.length),
+//				center: new google.maps.LatLng(sumLatitude/data.length, sumLongitude/data.length),
+				center: center.LatLng,
 				zoom: 11,
 				mapTypeId: google.maps.MapTypeId.ROADMAP,
 				mapTypeControlOptions: {style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR}
@@ -222,11 +234,24 @@ d3.csv("./addresses.csv", function(data) {
 				;
 				
 				//Add rectangles, circles, and text to any newly created top level SVG elements.
-//				newMarkers.append("svg:rect");
-				newMarkers.append("svg:circle");
+				//newMarkers.append("svg:rect");
+//				newMarkers.append("svg:circle");
+				newMarkers.each(function(d) {
+					switch (d.shape) {
+						case "square":
+							console.log(d);
+//							d3.select(this).append("svg:rect");
+							d3.select(this).append("svg:polygon")
+								.style("fill", "red")
+								.attr("points", "350,75  379,161 469,161 397,215 423,301 350,250 277,301 303,215 231,161 321,161")
+					            ;
+							break;
+						default:
+							d3.select(this).append("svg:circle");
+					}
+				});
 				newMarkers.append("svg:text");
 
-				
 				var markers = layer.selectAll("svg");
 
 				//Set the text and size
@@ -259,7 +284,7 @@ d3.csv("./addresses.csv", function(data) {
 					.attr("r", function(d) {return rCircle(d);})
 					.attr("cx", function(d) {return xOffsetSVG(d);})
 					.attr("cy", function(d) {return yOffsetSVG(d);})
-					.style("fill", function(d) {return circleColorScale(d.Team);})
+					.style("fill", function(d) {return circleColorScale(d.Organization);})
 				;
 
 				//Adjust the rectangles.
@@ -268,7 +293,7 @@ d3.csv("./addresses.csv", function(data) {
 					.attr("y", 0)
 					.attr("width", function(d) {return widthSVG(d);})
 					.attr("height", function(d) {return heightSVG(d);})
-					.style("fill", function(d) {return circleColorScale(d.Team);})
+					.style("fill", function(d) {return circleColorScale(d.Organization);})
 				;
 
 				//Function to move the top level SVG elements to the correct spot given the projection.

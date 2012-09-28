@@ -67,14 +67,11 @@ function radius(d) { return 5; }
 function color(d) { return d.team; }
 function key(d) { return d.name; }
 
-var zzz = d3.time.format("%b %d, %Y");
-
-//var xStartWeek = zzz(new Date("12/31/2012"));
-//alert(xStartWeek);
-
+var TimeFormat = d3.time.format("%b %d, %Y");
 
 var StartWeek = new Date("8/1/2005"),
 	EndWeek = new Date("8/31/2005");
+
 var timeTweenScale = d3.time.scale()
 	.domain([StartWeek, EndWeek])
 	.range([0, 1]);
@@ -95,8 +92,6 @@ var xScale = d3.scale.linear().domain([0, 10000]).range([0, width]),
 // The x & y axes.
 var xAxis = d3.svg.axis().orient("bottom").scale(xScale).ticks(12, d3.format(",d")),
     yAxis = d3.svg.axis().orient("left").scale(yScale).ticks(10).tickFormat(d3.format("%"));
-
-var formatWeek = d3.format("02");
 
 // Create the SVG container and set the origin.
 var svg = d3.select("#chart")
@@ -134,13 +129,14 @@ svg.append("text")
     .attr("transform", "rotate(-90)")
     .text("First Call Resolution (%)");
 
+
 // Add the time label; the value is set on transition.
 var label = svg.append("text")
     .attr("class", "time label")
     .attr("text-anchor", "end")
     .attr("y", height -24)
     .attr("x", width)
-    .text(zzz(StartWeek));
+    .text(TimeFormat(StartWeek));
 
 // Load the data.
 //d3.json("./agents3.json", function(agents) {
@@ -173,7 +169,31 @@ d3.json("http://dt06017:8080/", function(agents) {
 	// A bisector since many nation's data is sparsely-defined.
 //	var bisect = d3.bisector(function(d) { return new Date(d[0]); });
 	var bisect = d3.bisector(function(d) { return d[0]; });
-	var bisectR = d3.bisector(function(d) { return d[0]; }).right;
+
+	function TimeConvert(d) {
+		d[0] = new Date(d[0]);
+	}
+	
+	function TimeSort(d1, d2) {
+		return d1[0] - d2[0];
+	}
+	
+	agents.map(
+		function(d) {
+			d.att.map(TimeConvert);
+			d.fcr.map(TimeConvert);
+			d.att.sort(TimeSort);
+			d.fcr.sort(TimeSort);
+		}
+	);
+
+	svg.append("rect")
+		.attr("class", "hidden")
+		.attr("x", 0)
+		.attr("y", 0)
+		.attr("width", width)
+		.attr("height", height)
+		.on("click", TimeTransition);
 
 	svg.append("rect")
 		.attr("class", "hidden")
@@ -264,7 +284,6 @@ d3.json("http://dt06017:8080/", function(agents) {
 	}
 
 	function TimeTransition() {
-//		alert("trans");
 		svg.transition()
 			.duration(5000)
 			.ease("linear")
@@ -280,7 +299,7 @@ d3.json("http://dt06017:8080/", function(agents) {
 	// Updates the display to show the specified time.
 	function displayTime(time) {
 		dot.data(interpolateData(time), key).call(position).sort(SmallestOnTop);
-		label.text(zzz(time));
+		label.text(TimeFormat(time));
 	}
 
 	// Interpolates the dataset for the given (fractional) date.
