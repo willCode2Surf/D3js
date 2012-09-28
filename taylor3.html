@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<title>Bus Mon</title>
-<style>
-
-@import url(../style.css?20120427);
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Bus Mon</title>
+	<style>
 
 #chart {
   margin-left: -40px;
@@ -50,11 +50,23 @@ text {
 }
 
 </style>
+   <link href="../../public/bootstrap/css/bootstrap.min.css" rel="stylesheet">
 
+</head>
+<body>
 <header>
   <aside>ATT versus FCR</aside>
 </header>
 
+<ul class="nav nav-pills">
+	<li class="dropdown">
+		<a class="dropdown-toggle" data-toggle="dropdown" href="#">Dropdown<b class="caret"></b></a>
+		<ul class="dropdown-menu">
+		<!-- links -->
+			<li id="fred"><a href="#">Do something</a></li>
+		</ul>
+	</li>
+</ul>
 <p id="chart"></p>
 
 <script src="http://d3js.org/d3.v2.js?2.8.1"></script>
@@ -139,9 +151,9 @@ var label = svg.append("text")
     .text(TimeFormat(StartWeek));
 
 // Load the data.
-//d3.json("./agents3.json", function(agents) {
+d3.json("./agents3.json", function(agents) {
 //d3.json("./agentsmack.json", function(agents) {
-d3.json("http://dt06017:8080/", function(agents) {
+//d3.json("http://dt06017:8080/", function(agents) {
 //d3.json("http://192.168.17.139/dev/sandbox/Portal/Developer/dbrown/git/D3js/agents.php", function(agents) {
 
 	agents = agents.map(
@@ -202,6 +214,8 @@ d3.json("http://dt06017:8080/", function(agents) {
 		.attr("width", width)
 		.attr("height", height)
 		.on("click", TimeTransition);
+
+	d3.selectAll("#fred").on("click", TimeTransition);
 
 	// Add a dot per nation. Initialize the data at StartWeek, and set the colors.
 	var dot = svg.append("g")
@@ -333,3 +347,8 @@ d3.json("http://dt06017:8080/", function(agents) {
 });
 
 </script>
+
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script src="../public/bootstrap/js/bootstrap.min.js"></script>
+</body>
+</html>
