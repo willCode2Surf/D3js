@@ -170,7 +170,9 @@ function mouseover() {
 	component_clicked = d3.select(this).attr("id");
 
 	vis.selectAll("selected_group_"+component_clicked)
-		.data(eval("data_"+component_clicked))
+		.data(eval("data_"+component_clicked).filter(function(d) {
+			return d.hasOwnProperty("count");
+		}))
 	    .enter().append("svg:circle")
 		.attr("class", "select_"+component_clicked)
     	.attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; })
@@ -210,7 +212,9 @@ function assignEventListeners() {
 		//if checking, show circles, otherwise hide them
 		if(this.checked) {
 			vis.selectAll("dot") //initially, this will be an empty collection
-		    		.data(eval("data_"+student)) //bind each elements in our data_[student_name] array to a svg-circle
+		    		.data(eval("data_"+student).filter(function(d) {
+		    			return d.hasOwnProperty("count");
+		    		})) //bind each elements in our data_[student_name] array to a svg-circle
 					.enter().append("svg:circle")
 				    .attr("class", "dot dot_"+student)
 				    .attr("id", student)
@@ -271,7 +275,9 @@ function assignEventListeners() {
 				student = which_arr[i];
 				
 				vis.selectAll("dot") //initially, this will be an empty collection
-		    		.data(eval("data_"+student)) //bind each elements in our data_[student_name] array to a svg-circle
+		    		.data(eval("data_"+student).filter(function(d) {
+		    			return d.hasOwnProperty("count");
+		    		})) //bind each elements in our data_[student_name] array to a svg-circle
 					.enter().append("svg:circle")
 				    .attr("class", "dot dot_"+student)
 				    .attr("id", student)
