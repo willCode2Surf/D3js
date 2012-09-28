@@ -61,7 +61,9 @@
 		h = 500,
 		p = 16,
 		x = d3.scale.linear().range([0, w]).domain([-1,14]),
-		y = d3.scale.linear().range([300, 100]).domain([5,1]),
+		y = d3.scale.linear().range([200, 100]).domain([5,1]),
+		colScale = d3.scale.linear().range([0, w]).domain([-1,14]),
+		rowScale = d3.scale.linear().range([200, 100]).domain([5,1]),
 	
 		symbol = d3.scale.ordinal().range(d3.svg.symbolTypes),
 		//color = d3.scale.category20c();
@@ -107,16 +109,47 @@
 
 		d3.csv("./telco.csv", function(data) {
 			console.log(data);
-			var callreasons = new Array();
-			data.map(function(d) {
-				if (d["Call Reason"]!="*") {
-					if (callreasons.indexOf(d["Call Reason"])<0) {
-						callreasons.push(d["Call Reason"]);
-					}
-				}
-			});
-			console.log(callreasons);
+			var layout = data.shift();
 			
+			var dimensions = {
+				names: new Array(),
+				objects: new Array()
+			};
+			var metrics = new Array();
+			for (i in layout) {
+				switch (layout[i]) {
+					case "M":
+						metrics.push({
+							name: i
+						});
+						break;
+					case "D":
+						dimensions.names.push(i);
+						dimensions.objects.push({
+							name: i,
+							valueNames: new Array(),
+							valueObjects: new Array()
+						});
+						break;
+				}
+			}
+			console.log(metrics);
+			
+			dimensions.objects.forEach(function(dimension, i) {
+				data.forEach(function(d) {
+					if (d[dimension.name]!="*") {
+						if (dimension.valueNames.indexOf(d[dimension.name])<0) {
+							dimension.valueNames.push(d[dimension.name]);
+							dimension.valueObjects.push({
+								name: d[dimension.name]
+							});
+						}
+					}
+				});
+			});
+//			console.log(dimensions);
+//			console.log(dimensions.objects[dimensions.names.indexOf("Call Reason")].valueObjects);
+
 			var vis = d3.select("#visualization")
 				.append("svg:svg")
 					.attr("width", w + p * 2)
@@ -125,23 +158,65 @@
 					.attr("transform", "translate(" + p + "," + p + ")")
 			;
 
-			var yrule = vis.selectAll("g.y")
-				.data(callreasons)
+			//Rows
+			var rowData = dimensions.objects[dimensions.names.indexOf("Call Reason")].valueObjects;
+			var rows = vis.selectAll("g.row")
+				.data(rowData)
 				.enter().append("svg:g")
-					.attr("class", "y")
-					.attr("transform", function(d, i) {return "translate(0," + y(i+1) + ")";})
-					
+					.attr("class", "row")
+//					.attr("transform", function(d, i) {return "translate(0," + rowScale(i+1) + ")";})
 			;
 			
-			yrule.append("svg:line")
-				.attr("x1", 0)
+			rowlabels = rows.append("svg:text")
+				.attr("x", 0)
+				.attr("y", 0)
+				.text(function(d) {return d.name;})
+				.style("text-anchor", "end")
+				.each(function(d) {
+					d.BBox = this.getBBox();
+				})
+			;
+			
+			var maxText = 0;
+			rowlabels
+				.each(function(d) {
+					maxText = Math.max(maxText,d.BBox.width);
+			})
+
+			rowlabels
+				.attr("x", maxText)
+				.attr("dy", "0.5ex")
+			;
+			
+			rows.append("svg:line")
+				.attr("x1", maxText+10)
 				.attr("x2", w)
+			;
+			
+			rowScale.domain([-1, rowData.length]);
+			rowScale.range([0, h]);
+			rows
+				.attr("transform", function(d, i) {return "translate(0," + rowScale(i) + ")";})
+			
+			//Columns
+			colScale.domain([-1, metrics.length]);
+			colScale.range([maxText, w]);
+			
+			var cols = vis.selectAll("g.col")
+				.data(metrics)
+				.enter().append("svg:g")
+					.attr("class", "col")
+					.attr("transform", function(d, i) {return "translate(" + colScale(i) + ",0)";})
+			;
+
+			cols.append("svg:line")
+				.attr("y1", 0)
+				.attr("y2", h)
 			;
 		});
 	
 	</script>
 	
-	<div style="position:absolute;top:570px;width:100%;margin-right:20px;height:70px;background-color:#eeeded;margin:0;padding:0;border-top:1px solid #e0e0e0;border-bottom:1px solid #e0e0e0">
 	</div>
   </body>
 </html>
