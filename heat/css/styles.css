@@ -89,7 +89,12 @@ rect {
 }
 
 .row line, .col line {
-	stroke: #ff0000;
+	stroke: #ccc;
+	shape-rendering: crispEdges;
+}
+
+.border rect {
+	stroke: #ccc;
 	shape-rendering: crispEdges;
 }
 

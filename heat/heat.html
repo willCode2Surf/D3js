@@ -57,13 +57,15 @@
 		}
 
 		var TOTAL_STUDENTS = 38;
-		var w = 700,
+		var w = 1800,
 		h = 500,
 		p = 16,
 		x = d3.scale.linear().range([0, w]).domain([-1,14]),
 		y = d3.scale.linear().range([200, 100]).domain([5,1]),
 		colScale = d3.scale.linear().range([0, w]).domain([-1,14]),
 		rowScale = d3.scale.linear().range([200, 100]).domain([5,1]),
+		widthScale = d3.scale.linear(),
+		heightScale = d3.scale.linear();
 	
 		symbol = d3.scale.ordinal().range(d3.svg.symbolTypes),
 		//color = d3.scale.category20c();
@@ -115,13 +117,20 @@
 				names: new Array(),
 				objects: new Array()
 			};
-			var metrics = new Array();
+			var metrics = {
+				names: new Array(),
+				objects: new Array()
+			};
 			for (i in layout) {
 				switch (layout[i]) {
 					case "M":
-						metrics.push({
+						metrics.names.push(i);
+						metrics.objects.push({
 							name: i
 						});
+//						metrics.push({
+//							name: i
+//						});
 						break;
 					case "D":
 						dimensions.names.push(i);
@@ -147,7 +156,7 @@
 					}
 				});
 			});
-//			console.log(dimensions);
+			console.log(dimensions);
 //			console.log(dimensions.objects[dimensions.names.indexOf("Call Reason")].valueObjects);
 
 			var vis = d3.select("#visualization")
@@ -158,61 +167,103 @@
 					.attr("transform", "translate(" + p + "," + p + ")")
 			;
 
-			//Rows
 			var rowData = dimensions.objects[dimensions.names.indexOf("Call Reason")].valueObjects;
+			var rowNames = dimensions.objects[dimensions.names.indexOf("Call Reason")].valueNames;
+			var colData = metrics.names;
+			
+			//Rows
 			var rows = vis.selectAll("g.row")
 				.data(rowData)
 				.enter().append("svg:g")
 					.attr("class", "row")
-//					.attr("transform", function(d, i) {return "translate(0," + rowScale(i+1) + ")";})
+			;
+			//Columns			
+			var cols = vis.selectAll("g.col")
+				.data(colData)
+				.enter().append("svg:g")
+					.attr("class", "col")
 			;
 			
 			rowlabels = rows.append("svg:text")
-				.attr("x", 0)
-				.attr("y", 0)
-				.text(function(d) {return d.name;})
 				.style("text-anchor", "end")
-				.each(function(d) {
-					d.BBox = this.getBBox();
-				})
 			;
-			
-			var maxText = 0;
-			rowlabels
-				.each(function(d) {
-					maxText = Math.max(maxText,d.BBox.width);
-			})
+			collabels = cols.append("svg:text")
+				.style("text-anchor", "middle")
+			;
 
 			rowlabels
-				.attr("x", maxText)
+				.append("tspan")
+				.text(function(d) {return d.name;})
+			;
+			collabels
+				.append("tspan")
+				.text(function(d) {return d;})
+			;
+			
+			var maxRowTextWidth = 0;
+			rowlabels
+				.each(function(d) {
+					d.BBox = this.getBBox();
+					maxRowTextWidth = Math.max(maxRowTextWidth, d.BBox.width);
+			})
+			var maxColTextHeight = 0;
+			rowlabels
+				.each(function(d) {
+					d.BBox = this.getBBox();
+					maxColTextHeight = Math.max(maxColTextHeight, d.BBox.height);
+			})
+
+			rowScale.domain([-1, rowData.length]).range([maxColTextHeight, h]);
+			heightScale.domain([-1, rowData.length]).range([0, h - maxColTextHeight]);
+			colScale.domain([-1, colData.length]).range([maxRowTextWidth, w]);
+			widthScale.domain([-1, colData.length]).range([0, w - maxRowTextWidth]);
+
+			rowlabels
+				.attr("x", colScale(-1)-10)
 				.attr("dy", "0.5ex")
 			;
 			
 			rows.append("svg:line")
-				.attr("x1", maxText+10)
-				.attr("x2", w)
+				.attr("x1", colScale(-1))
+				.attr("x2", colScale(colData.length))
 			;
 			
-			rowScale.domain([-1, rowData.length]);
-			rowScale.range([0, h]);
 			rows
 				.attr("transform", function(d, i) {return "translate(0," + rowScale(i) + ")";})
-			
-			//Columns
-			colScale.domain([-1, metrics.length]);
-			colScale.range([maxText, w]);
-			
-			var cols = vis.selectAll("g.col")
-				.data(metrics)
-				.enter().append("svg:g")
-					.attr("class", "col")
-					.attr("transform", function(d, i) {return "translate(" + colScale(i) + ",0)";})
-			;
+			cols
+				.attr("transform", function(d, i) {return "translate(" + colScale(i) + ",0)";})
 
 			cols.append("svg:line")
-				.attr("y1", 0)
-				.attr("y2", h)
+				.attr("y1", rowScale(-1))
+				.attr("y2", rowScale(rowData.length))
 			;
+
+			vis.append("svg:g")
+				.attr("class", "border")
+				.attr("transform", function(d, i) {return "translate("+colScale(-1)+"," + rowScale(-1) + ")";})
+				.append("svg:rect")
+					.attr("width", widthScale(colData.length))
+					.attr("height", heightScale(rowData.length))
+			;
+
+			function isVisible(d) {
+				return d["Call Reason"] != "*";
+			}
+			
+			var grid = new Array();
+			data.filter(isVisible).forEach(function(d) {
+				grid.push({
+					d: d["Call Reason"],
+					m: metrics.names[0],
+					v: d[metrics.names[0]],
+					x: rowNames.indexOf(d["Call Reason"]),
+					y: metrics.names.indexOf(metrics.names[0])
+				});
+			});
+
+			console.log(grid);
+//			console.log(rowData);
+				
 		});
 	
 	</script>
