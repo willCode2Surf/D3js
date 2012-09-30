@@ -66,6 +66,7 @@
 		rowScale = d3.scale.linear().range([200, 100]).domain([5,1]),
 		widthScale = d3.scale.linear(),
 		heightScale = d3.scale.linear();
+		sizeScale = d3.scale.pow().exponent(0.5);
 	
 		symbol = d3.scale.ordinal().range(d3.svg.symbolTypes),
 		//color = d3.scale.category20c();
@@ -126,11 +127,10 @@
 					case "M":
 						metrics.names.push(i);
 						metrics.objects.push({
-							name: i
+							name: i,
+							max: 0,
+							scale: d3.scale.pow().exponent(0.5)
 						});
-//						metrics.push({
-//							name: i
-//						});
 						break;
 					case "D":
 						dimensions.names.push(i);
@@ -159,7 +159,7 @@
 			console.log(dimensions);
 //			console.log(dimensions.objects[dimensions.names.indexOf("Call Reason")].valueObjects);
 
-			var vis = d3.select("#visualization")
+			var vis = d3.select("#visualization2")
 				.append("svg:svg")
 					.attr("width", w + p * 2)
 					.attr("height", h + p * 2)
@@ -169,7 +169,8 @@
 
 			var rowData = dimensions.objects[dimensions.names.indexOf("Call Reason")].valueObjects;
 			var rowNames = dimensions.objects[dimensions.names.indexOf("Call Reason")].valueNames;
-			var colData = metrics.names;
+			var colData = metrics.objects;
+			var colNames = metrics.names;
 			
 			//Rows
 			var rows = vis.selectAll("g.row")
@@ -197,7 +198,8 @@
 			;
 			collabels
 				.append("tspan")
-				.text(function(d) {return d;})
+//				.text(function(d) {return d;})
+				.text(function(d) {return d.name;})
 			;
 			
 			var maxRowTextWidth = 0;
@@ -238,32 +240,78 @@
 				.attr("y2", rowScale(rowData.length))
 			;
 
-			vis.append("svg:g")
-				.attr("class", "border")
-				.attr("transform", function(d, i) {return "translate("+colScale(-1)+"," + rowScale(-1) + ")";})
-				.append("svg:rect")
-					.attr("width", widthScale(colData.length))
-					.attr("height", heightScale(rowData.length))
-			;
+			if (false) {
+				vis.append("svg:g")
+					.attr("class", "border")
+					.attr("transform", function(d, i) {return "translate("+colScale(-1)+"," + rowScale(-1) + ")";})
+					.append("svg:rect")
+						.attr("width", widthScale(colData.length))
+						.attr("height", heightScale(rowData.length))
+				;
+			}
 
+			//Have the grid now
+			var gridSize = Math.min(widthScale.range().pop()/(colData.length+1), heightScale.range().pop()/(rowData.length+1));
+			
 			function isVisible(d) {
 				return d["Call Reason"] != "*";
 			}
-			
-			var grid = new Array();
-			data.filter(isVisible).forEach(function(d) {
-				grid.push({
-					d: d["Call Reason"],
-					m: metrics.names[0],
-					v: d[metrics.names[0]],
-					x: rowNames.indexOf(d["Call Reason"]),
-					y: metrics.names.indexOf(metrics.names[0])
+
+			function visibleMetrics(metricObject) {
+				switch (metricObject.name) {
+					case "AHT":
+					case "Calls 2 Resolve":
+					case "NPS":
+						return true;
+						break;
+					default:
+						return false;
+				}
+			}
+
+			var	grid = new Array(),
+				dimension = "Call Reason";
+			data.filter(isVisible).forEach(function(data) {
+				metrics.objects.filter(visibleMetrics).forEach(function(metricObject) {
+					metricObject.max = Math.max(metricObject.max, data[metricObject.name]);
+					grid.push({
+//						d: d["Call Reason"],
+//						m: metrics.names[0],
+						v: data[metricObject.name],
+	//					v: 541,
+						y: rowNames.indexOf(data[dimension]),
+						x: colNames.indexOf(metricObject.name)
+					});
 				});
 			});
-
+//			sizeScale.domain([0, maxValue]).range([0, gridSize/2]);
+//			sizeScale.domain([0, 150]).range([0, gridSize/2]);
 			console.log(grid);
-//			console.log(rowData);
+
+			metrics.objects.filter(visibleMetrics).forEach(function(metricObject) {
+				metricObject.scale.domain([0, metricObject.max]).range([0, gridSize/2]);
+			});
 				
+			var cells = vis.selectAll("svg.cell")
+				.data(grid)
+				.enter().append("svg:g")
+					.attr("class", "cell")
+					.attr("transform", function(d) {console.log("translate("+colScale(d.x)+","+rowScale(d.y)+");"); return "translate("+colScale(d.x)+","+rowScale(d.y)+")";})
+			;
+			
+			cells
+				.append("svg:circle")
+			    	.transition()
+				    	.delay(0)
+				        .duration(800)
+						.attr("r", function(d) {return metrics.objects[d.x].scale(d.v);})
+			;
+			cells
+				.append("svg:text")
+					.style("text-anchor", "middle")
+					.attr("dy", "0.5ex")
+					.text(function(d) {return d.v;})
+			;
 		});
 	
 	</script>

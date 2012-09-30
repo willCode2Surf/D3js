@@ -98,6 +98,11 @@ rect {
 	shape-rendering: crispEdges;
 }
 
+.cell circle {
+	fill: #cc0000;
+	fill-opacity: 0.5;
+}
+
 .control, .control_zoners, .control_seaters, .control_jumpers, .control_select_all {
 	margin:0;
 	padding:0;
