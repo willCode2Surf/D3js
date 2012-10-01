@@ -53,29 +53,29 @@ h1 {
 	padding-left:70px;
 }
 
-#visualization_container {
-	width:750px;
-	height:500px;
+.visualization_container {
+//	width:750px;
+//	height:500px;
 	padding:4px;
 	background-color:#f4f4f4;
 	color:#343434;
 	float:left; 
 }
 
-#scrollPaneContent {
+.scrollPaneContent {
 	font-size:80%;
 	outline:0;
 	width:430px;
 	padding:10px;
 	height:490px;
-	float:left;
+	float:left;;
 }
 
-#visualization {
+.visualization {
 	padding:0px;
 	border:0px solid black;
-	width:800px;
-	height:500px;
+//	width:800px;
+//	height:500px;
 }
 
 rect {
@@ -100,7 +100,7 @@ rect {
 
 .cell circle {
 	fill: #cc0000;
-	fill-opacity: 0.5;
+	fill-opacity: 0.4;
 }
 
 .control, .control_zoners, .control_seaters, .control_jumpers, .control_select_all {
