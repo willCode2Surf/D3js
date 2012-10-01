@@ -144,7 +144,15 @@ div.checker {
   width: 19px;
   height: 19px;
 }
-
+.crap {
+	line-height: 0;
+	font-size: 100%;
+	display: block;
+	margin: 0;
+	padding: 0;
+	margin-right: 3px;
+	padding-left: 3px;
+}
 div.checker input {
   width: 19px;
   height: 19px;
@@ -548,6 +556,7 @@ div.checker input {
   filter: alpha(opacity:0);
   display: inline-block;
   background: none;
+  line-height: 0;
 }
 
 /* Radio */

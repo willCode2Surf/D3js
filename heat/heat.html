@@ -1,30 +1,49 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
-	<head>
-		<title>Heat Map</title>
-		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	
-		<link href="css/styles.css" rel="stylesheet" type="text/css" />
-	
+<head>
+	<title>Heat Map</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+	<link href="../../../public/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<link href="css/styles.css" rel="stylesheet" type="text/css" />
+
 	<script type="text/javascript" src="js/data.js"></script>
 	<script type="text/javascript" src="js/data_time_series.js"></script>
 	<script type="application/x-javascript" src="../../../public/mbostock-d3/d3.v2.min.js"></script>
-	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js" type="text/javascript"></script>
-	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script>
+
+<!-- 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js" type="text/javascript"></script> -->
+	<script src="http://code.jquery.com/jquery.min.js" type="text/javascript"></script>
+<!-- 	<script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8/jquery-ui.min.js"></script> -->
+	<script src="http://code.jquery.com/ui/1.8.24/jquery-ui.min.js"></script>
+
 	<script src="js/global.js" type="text/javascript"></script>
-	
+
+	<script src="../../../public/bootstrap/js/bootstrap.min.js"></script>
+
 	<link rel="stylesheet" href="css/uniform.default.css" type="text/css" media="screen" charset="utf-8" />
 	<script src="js/jquery.uniform.js" type="text/javascript"></script>
-	
+
 	<link rel="stylesheet" href="css/styledButton.css" type="text/css" media="screen" charset="utf-8" />
 	<script src="js/jquery.styledButton.js" type="text/javascript"></script>
 	
 <!--	<link href='http://fonts.googleapis.com/css?family=PT+Sans+Narrow' rel='stylesheet' type='text/css'>-->
 <!--	<link href='http://fonts.googleapis.com/css?family=Cardo' rel='stylesheet' type='text/css'>-->
+
 </head>
 
 <body>
 	<h1 style="padding-top:10px">Telco Dashboard</h1>
+
+	<ul class="nav nav-pills">
+		<li class="dropdown">
+			<a class="dropdown-toggle" data-toggle="dropdown" href="#">Dropdown<b class="caret"></b></a>
+			<ul class="dropdown-menu">
+			<!-- links -->
+				<li id="fred"><a onclick="alert();">Do something</a></li>
+			</ul>
+		</li>
+	</ul>
+
 	<div style="width:3000px;position:relative;left:50px">
 		<div id="visualization_container2" class="visualization_container" style="display:inline-block">
 			<div id="visualization2" class="visualization">
@@ -350,10 +369,12 @@
 					content += "<div style='float:left;padding-right:10px;padding-top:10px;'>";
 					content += "<span class='categoryTitle'>"+dimension.name+"</span><br />";
 					content += "<div style='border-left:2px solid #f24254;position:relative;left:1px;top:0'>";
-					content += "<label><input type='checkbox' class='xcontrol_select_all' id='all_"+dimension.name+"' style='vertical-align: middle; margin: 0px' /> Visualize all</label><br />";
+					content += "<label class='crap'><input type='checkbox' class='xcontrol_select_all' id='all_"+dimension.name+"' style='vertical-align: middle; margin: 0px' /> Visualize all</label>";
+//					content += "<input type='checkbox' class='control_select_all' id='all_"+dimension.name+"' style='vertical-align: middle; margin: 0px' /> <span>Visualize all</span><br />";
 		
 					for(i=0;i<dimension.valueObjects.length;i++) {
-						content += "<label><input type='checkbox' name='control_seaters' class='control' id='" + dimension.valueObjects[i].name + "' /> <span id='text_" + dimension.valueObjects[i].name + "'>" + dimension.valueObjects[i].name + "</span></label><br />"
+						content += "<label class='crap'><input type='checkbox' name='control_seaters' class='control' id='" + dimension.valueObjects[i].name + "' /> <span id='text_" + dimension.valueObjects[i].name + "'>" + dimension.valueObjects[i].name + "</span></label>"
+//						content += "<input type='checkbox' name='control_seaters' class='control' id='" + dimension.valueObjects[i].name + "' /> <span class='checker' id='text_" + dimension.valueObjects[i].name + "'>" + dimension.valueObjects[i].name + "</span><br />"
 					}
 					content += "</div></div>";
 				}

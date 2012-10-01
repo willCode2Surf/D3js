@@ -1,7 +1,7 @@
 /*
 
 Uniform v1.7.5
-Copyright å© 2009 Josh Pyles / Pixelmatrix Design LLC
+Copyright ï¿½ 2009 Josh Pyles / Pixelmatrix Design LLC
 http://pixelmatrixdesign.com
 
 Requires jQuery 1.4 or newer
@@ -235,6 +235,7 @@ Enjoy!
       }
       
       divTag.addClass(options.checkboxClass);
+      spanTag.addClass(options.checkboxClass);
 
       //assign the id of the element
       if(options.useID && elem.attr("id") != ""){
