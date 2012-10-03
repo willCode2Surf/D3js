@@ -37,7 +37,7 @@
 
 	<ul class="nav nav-pills">
 		<li class="dropdown">
-			<a class="dropdown-toggle" data-toggle="dropdown">Change Dimesion<b class="caret"></b></a>
+			<a class="dropdown-toggle" data-toggle="dropdown">Change Dimension<b class="caret"></b></a>
 			<ul id="dimension-selection" class="dropdown-menu">
 			<!-- links -->
 			</ul>
@@ -69,9 +69,9 @@
 			}
 		}
 
-		var w = 1000,
-		h = 500,
-		p = 16,
+		var	w = 1000,
+			h = 500,
+			p = 16,
 
 		colScale = d3.scale.linear().range([0, w]).domain([-1,14]),
 		rowScale = d3.scale.linear().range([200, 100]).domain([5,1]),
@@ -144,175 +144,7 @@
 			});
 			console.log(dimensions);
 
-			// var vis = d3.select("#visualization")
-				// .append("svg:svg")
-					// .attr("width", w + p * 2)
-					// .attr("height", h + p * 2)
-				// .append("svg:g")
-					// .attr("transform", "translate(" + p + "," + p + ")")
-			// ;
-
 			var selectedDimension = "Market";
-			// var rowData = dimensions.objects[dimensions.names.indexOf(selectedDimension)].valueObjects;
-			// var rowNames = dimensions.objects[dimensions.names.indexOf(selectedDimension)].valueNames;
-			// var colData = metrics.objects;
-			// var colNames = metrics.names;
-// 			
-			// //Rows
-			// var rows = vis.selectAll("g.row")
-				// .data(rowData)
-				// .enter().append("svg:g")
-					// .attr("class", "row")
-			// ;
-			// //Columns			
-			// var cols = vis.selectAll("g.col")
-				// .data(colData)
-				// .enter().append("svg:g")
-					// .attr("class", "col")
-			// ;
-// 			
-			// rowlabels = rows.append("svg:text")
-				// .style("text-anchor", "end")
-			// ;
-			// collabels = cols.append("svg:text")
-				// .style("text-anchor", "middle")
-			// ;
-// 
-			// rowlabels
-				// .append("tspan")
-				// .text(function(d) {return d.name;})
-			// ;
-			// collabels
-				// .append("tspan")
-// //				.text(function(d) {return d;})
-				// .text(function(d) {return d.name;})
-			// ;
-// 			
-			// var maxRowTextWidth = 0;
-			// rowlabels
-				// .each(function(d) {
-					// d.BBox = this.getBBox();
-					// maxRowTextWidth = Math.max(maxRowTextWidth, d.BBox.width);
-			// })
-			// var maxColTextHeight = 0;
-			// rowlabels
-				// .each(function(d) {
-					// d.BBox = this.getBBox();
-					// maxColTextHeight = Math.max(maxColTextHeight, d.BBox.height);
-			// })
-// 
-			// rowScale.domain([-1, rowData.length]).range([maxColTextHeight, h]);
-			// heightScale.domain([-1, rowData.length]).range([0, h - maxColTextHeight]);
-			// var	rowSpacing = heightScale.range().pop()/(rowData.length+1),
-				// rowLabelMargin = 10;
-// 
-// //			colScale.domain([-1, colData.length]).range([maxRowTextWidth, w]);
-// //			widthScale.domain([-1, colData.length]).range([0, w - maxRowTextWidth]);
-			// widthScale.domain([0, colData.length-1]).range([0, w - maxRowTextWidth]);
-			// var	colSpacing = widthScale.range().pop()/(colData.length),
-			// gridSize = Math.min(rowSpacing, colSpacing);
-			// colScale.domain([0, colData.length-1]).range([maxRowTextWidth+rowLabelMargin+rowSpacing, w-rowSpacing]);
-// 
-// 
-			// rowlabels
-				// .attr("x", colScale(-rowSpacing/colSpacing)-rowLabelMargin)
-				// .attr("dy", "0.5ex")
-			// ;
-// 			
-			// rows.append("svg:line")
-				// .attr("x1", colScale(-rowSpacing/colSpacing))
-				// .attr("x2", colScale(colData.length))
-			// ;
-// 			
-			// rows
-				// .attr("transform", function(d, i) {return "translate(0," + rowScale(i) + ")";})
-			// cols
-				// .attr("transform", function(d, i) {return "translate(" + colScale(i) + ",0)";})
-// 
-			// cols.append("svg:line")
-				// .attr("y1", rowScale(-1))
-				// .attr("y2", rowScale(rowData.length))
-			// ;
-// 
-			// if (false) {
-				// vis.append("svg:g")
-					// .attr("class", "border")
-					// .attr("transform", function(d, i) {return "translate("+colScale(-1)+"," + rowScale(-1) + ")";})
-					// .append("svg:rect")
-						// .attr("width", widthScale(colData.length))
-						// .attr("height", heightScale(rowData.length))
-				// ;
-			// }
-// 
-			// //Have the grid now
-// //			var gridSize = Math.min(widthScale.range().pop()/(colData.length+1), heightScale.range().pop()/(rowData.length+1));
-// 			
-			// function isVisible(d) {
-				// return d[selectedDimension] != "*";
-			// }
-// 
-			// function visibleMetrics(metricObject) {
-				// switch (metricObject.name) {
-					// default:
-						// return true;
-				// }
-			// }
-// 
-			// var	grid = new Array();
-			// data.filter(isVisible).forEach(function(data) {
-				// metrics.objects.filter(visibleMetrics).forEach(function(metricObject) {
-					// value = data[metricObject.name]/data[base.name];
-					// switch (metricObject.format) {
-						// case "%":
-							// formattedValue = Math.round(100*value)+"%";
-							// break;
-						// default:
-							// formattedValue = value;
-					// }
-					// metricObject.max = Math.max(metricObject.max, value);
-					// grid.push({
-// //						d: d["Call Reason"],
-// //						m: metrics.names[0],
-// //						v: data[metricObject.name],
-						// y: rowNames.indexOf(data[selectedDimension]),
-						// x: colNames.indexOf(metricObject.name),
-						// v: value,
-						// f: formattedValue
-					// });
-				// });
-			// });
-// //			sizeScale.domain([0, maxValue]).range([0, gridSize/2]);
-// //			sizeScale.domain([0, 150]).range([0, gridSize/2]);
-			// console.log(Number("50"));
-// 
-			// metrics.objects.filter(visibleMetrics).forEach(function(metricObject) {
-				// metricObject.scale.domain([0, metricObject.max]).range([0, gridSize/1.5]);
-			// });
-// 				
-			// var cells = vis.selectAll("svg.cell")
-				// .data(grid)
-				// .enter().append("svg:g")
-					// .attr("class", "cell")
-					// .attr("transform", function(d) {return "translate("+colScale(d.x)+","+rowScale(d.y)+")";})
-			// ;
-// 			
-			// cells
-				// .append("svg:circle")
-			    	// .transition()
-				    	// .delay(0)
-				        // .duration(800)
-						// .attr("r", function(d) {return metrics.objects[d.x].scale(d.v);})
-			// ;
-			// cells
-				// .append("svg:text")
-					// .style("text-anchor", "middle")
-					// .attr("dy", "0.5ex")
-					// .text(function(d) {return d.f;})
-			// ;
-
-			//***************
-			
-			createHeat(data, selectedDimension, metrics, dimensions);
 			createDimensionOptions(dimensions, selectedDimension);
 
 			d3.select("#dimension-selection").selectAll("li")
@@ -321,7 +153,7 @@
 					.append("a")
 						.text(function(d) {return d;})
 						.on("click", function(d) {
-							clearFade();
+//							clearFade();
 							createHeat(data, d, metrics, dimensions);
 						})
 			;

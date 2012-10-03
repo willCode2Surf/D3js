@@ -1,28 +1,3 @@
-/**
- * Clears the visualization area
- **/
-function clearFade() {
-	cells = d3.selectAll("svg g.row, svg g.col, svg g.cell, svg g.border")
-		.transition()
-			.duration(500)
-			.each("end",function() { 
-				d3.select(this).remove();					
-			})
-	;
-	cells.selectAll("circle")
-		.transition()
-			.duration(500)
-			.attr("r", 0)
-	;
-	cells.selectAll("text, line, rect")
-		.transition()
-			.duration(400)
-			.delay(100)
-			.style("fill-opacity", 0)
-			.style("stroke-opacity", 0)
-	;
-}
-
 function createDimensionOptions(dimensions, selectedDimension) {
 	var content = "";
 	dimensions.objects.forEach(function(dimension) {
@@ -46,21 +21,92 @@ function createDimensionOptions(dimensions, selectedDimension) {
 	$(".xcontrol_select_all").click();
 }
 
+function fadeout(selection)
+{
+	console.log(selection);
+	selection.transition()
+		.duration(500)
+		.each("end",function() { 
+			d3.select(this).remove();					
+		})
+	;
+	selection.selectAll("circle")
+		.transition()
+			.duration(500)
+			.attr("r", 0)
+	;
+	selection.selectAll("text, line, rect")
+		.transition()
+			.duration(400)
+			.delay(100)
+			.style("fill-opacity", 0)
+			.style("stroke-opacity", 0)
+	;
+}
+
 function createHeat(data, selectedDimension, metrics, dimensions) {
 	var rowData = dimensions.objects[dimensions.names.indexOf(selectedDimension)].valueObjects;
 	var rowNames = dimensions.objects[dimensions.names.indexOf(selectedDimension)].valueNames;
 	var colData = metrics.objects;
 	var colNames = metrics.names;
-			
+
+	var grid = new Array();
+	data.filter(isVisible).map(function(data) {
+		metrics.objects.filter(visibleMetrics).map(function(metricObject) {
+			value = data[metricObject.name]/data[base.name];
+			switch (metricObject.format) {
+				case "%":
+					formattedValue = Math.round(100*value)+"%";
+					break;
+				default:
+					formattedValue = value;
+			}
+			metricObject.max = Math.max(metricObject.max, value);
+			grid.push({
+				y: rowNames.indexOf(data[selectedDimension]),
+				x: colNames.indexOf(metricObject.name),
+				v: value,
+				f: formattedValue
+			});
+		});
+	});
+	
+	var crap = vis.selectAll("g.crap")
+		.data(rowData)
+		.enter()
+	;
+	crapg = crap.append("svg:g")
+		.attr("class", "crap")
+	;
+	crapg.append("svg:g")
+		.attr("class", "morecrap")
+	;
+	
+	//Remove old rows
+	vis.selectAll("g.row")
+		.data(rowData,  function(d) {return d.name;})
+		.exit().call(function() {fadeout(this);})
+	;
+	//Remove old columns
+	vis.selectAll("g.col")
+		.data(colData,  function(d) {return d.name;})
+		.exit().call(function() {fadeout(this);})
+	;
+	//Remove old cells
+	vis.selectAll("g.cell")
+		.data(grid,  function(d) {return d.x+","+d.y;})
+		.exit().call(function() {fadeout(this);})
+	;
+	
 	//Rows
 	var rows = vis.selectAll("g.row")
-		.data(rowData)
+		.data(rowData,  function(d) {return d.name;})
 		.enter().append("svg:g")
 			.attr("class", "row")
 	;
 	//Columns			
 	var cols = vis.selectAll("g.col")
-		.data(colData)
+		.data(colData,  function(d) {return d.name;})
 		.enter().append("svg:g")
 			.attr("class", "col")
 	;
@@ -106,7 +152,6 @@ function createHeat(data, selectedDimension, metrics, dimensions) {
 	gridSize = Math.min(rowSpacing, colSpacing);
 	colScale.domain([0, colData.length-1]).range([maxRowTextWidth+rowLabelMargin+rowSpacing, w-rowSpacing]);
 
-
 	rowlabels
 		.attr("x", colScale(-rowSpacing/colSpacing)-rowLabelMargin)
 		.attr("dy", "0.5ex")
@@ -151,50 +196,42 @@ function createHeat(data, selectedDimension, metrics, dimensions) {
 		}
 	}
 
-	var	grid = new Array();
-	data.filter(isVisible).forEach(function(data) {
-		metrics.objects.filter(visibleMetrics).forEach(function(metricObject) {
-			value = data[metricObject.name]/data[base.name];
-			switch (metricObject.format) {
-				case "%":
-					formattedValue = Math.round(100*value)+"%";
-					break;
-				default:
-					formattedValue = value;
-			}
-			metricObject.max = Math.max(metricObject.max, value);
-			grid.push({
-				y: rowNames.indexOf(data[selectedDimension]),
-				x: colNames.indexOf(metricObject.name),
-				v: value,
-				f: formattedValue
-			});
-		});
-	});
-//			sizeScale.domain([0, maxValue]).range([0, gridSize/2]);
-//			sizeScale.domain([0, 150]).range([0, gridSize/2]);
-	console.log(Number("50"));
-
 	metrics.objects.filter(visibleMetrics).forEach(function(metricObject) {
 		metricObject.scale.domain([0, metricObject.max]).range([0, gridSize/1.5]);
 	});
-				
-	var cells = vis.selectAll("svg.cell")
-		.data(grid)
+
+//	var existingCells = vis.selectAll("g.cell")
+//		.data(grid, function(d) {return d.x+","+d.y;})
+//	;
+	var newCells = vis.selectAll("g.cell")
+		.data(grid, function(d) {return d.x+","+d.y;})
 		.enter().append("svg:g")
 			.attr("class", "cell")
 			.attr("transform", function(d) {return "translate("+colScale(d.x)+","+rowScale(d.y)+")";})
 	;
-			
+	newCells.append("svg:circle");
+	newCells.append("svg:text");
+	
+	var cells = vis.selectAll("g.cell").data(grid, function(d) {return d.x+","+d.y;});
+//	console.log("cells");
+//	console.log(shitfuck);
 	cells
-		.append("svg:circle")
-	    	.transition()
-		    	.delay(0)
-		        .duration(800)
-				.attr("r", function(d) {return metrics.objects[d.x].scale(d.v);})
+		.transition()
+			.delay(0)
+			.duration(800)
+			.attr("transform", function(d) {return "translate("+colScale(d.x)+","+rowScale(d.y)+")";})
 	;
-	cells
-		.append("svg:text")
+//	console.log(shitfuck.selectAll("circle"));
+	
+	cells.selectAll("circle")
+    	.transition()
+	    	.delay(0)
+	        .duration(800)
+			.attr("r", function(d) {return metrics.objects[d.x].scale(d.v);})
+	;
+
+	cells.selectAll("text")
+   		.transition()
 			.style("text-anchor", "middle")
 			.attr("dy", "0.5ex")
 			.text(function(d) {return d.f;})
