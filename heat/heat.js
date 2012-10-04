@@ -214,7 +214,7 @@ function createHeat(data, selectedDimension, metrics, dimensions) {
 	
 	var cells = vis.selectAll("g.cell").data(grid, function(d) {return d.x+","+d.y;});
 //	console.log("cells");
-//	console.log(shitfuck);
+
 	cells
 		.transition()
 			.delay(0)
