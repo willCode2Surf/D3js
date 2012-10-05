@@ -30,45 +30,64 @@ function fadeout(selection)
 			d3.select(this).remove();					
 		})
 	;
-	selection.selectAll("circle")
-		.transition()
-			.duration(500)
-			.attr("r", 0)
+//	selection.selectAll("circle")
+//		.transition()
+//			.duration(500)
+//			.attr("r", 0)
+//	;
+//	var xxx1 = selection.selectAll("text, line, rect")
+//		.transition()
+//			.duration(400)
+//			.delay(100)
+//			.style("fill-opacity", 0)
+//			.style("stroke-opacity", 0)
+//	;
+//	console.log("the lines being removed");
+//	console.log(xxx1);
+}
+
+function fadeIn(selection, scale)
+{
+	console.log(selection);
+	selection.transition()
+		.duration(500)
+		.attr("transform", function(d, i) {return "translate(0," + scale(i) + ")";})
 	;
+//	selection.selectAll("circle")
+//		.transition()
+//			.duration(500)
+//			.attr("r", 0)
+//	;
 	selection.selectAll("text, line, rect")
 		.transition()
-			.duration(400)
-			.delay(100)
-			.style("fill-opacity", 0)
-			.style("stroke-opacity", 0)
+			.delay(0)
+			.duration(500)
+			.style("fill-opacity", 1)
+			.style("stroke-opacity", 1)
 	;
 }
 
-function createHeat(data, selectedDimension, metrics, dimensions) {
-	var dimensionObject = dimensions.objects[dimensions.names.indexOf(selectedDimension)];
-//	var rowData = dimensions.objects[dimensions.names.indexOf(selectedDimension)].valueObjects;
-	var rowData = dimensionObject.valueObjects;
-	var rowNames = dimensions.objects[dimensions.names.indexOf(selectedDimension)].valueNames;
+function createHeat(data, dimensions, metrics) {
+	var rowData = dimensions.valueObjects;
+	var rowNames = dimensions.valueNames;
 	var colData = metrics.objects;
 	var colNames = metrics.names;
 
-	console.log(selectedDimension);
-	console.log(dimensionObject.name);
 	var grid = new Array();
 	data.filter(isVisible).map(function(data) {
-		metrics.objects.filter(visibleMetrics).map(function(metricObject) {
-			value = data[metricObject.name]/data[base.name];
-			switch (metricObject.format) {
+		metrics.objects.filter(visibleMetrics).map(function(metric) {
+			value = data[metric.name]/data[base.name];
+			switch (metric.format) {
 				case "%":
 					formattedValue = Math.round(100*value)+"%";
 					break;
 				default:
 					formattedValue = value;
 			}
-			metricObject.max = Math.max(metricObject.max, value);
+			metric.max = Math.max(metric.max, value);
 			grid.push({
-				y: rowNames.indexOf(data[selectedDimension]),
-				x: colNames.indexOf(metricObject.name),
+				y: rowNames.indexOf(data[dimensions.name]),
+				x: colNames.indexOf(metric.name),
 				v: value,
 				f: formattedValue
 			});
@@ -108,6 +127,7 @@ function createHeat(data, selectedDimension, metrics, dimensions) {
 		.enter().append("svg:g")
 			.attr("class", "row")
 	;
+
 	//Columns			
 	var cols = vis.selectAll("g.col")
 		.data(colData,  function(d) {return d.name;})
@@ -131,36 +151,32 @@ function createHeat(data, selectedDimension, metrics, dimensions) {
 		.text(function(d) {return d.name;})
 	;
 			
-	var maxRowTextWidth = 0;
 	rowlabels
 		.each(function(d) {
 			d.BBox = this.getBBox();
-			maxRowTextWidth = Math.max(maxRowTextWidth, d.BBox.width);
-			dimensionObject.maxNameWidth = Math.max(d.BBox.width, dimensionObject.maxNameWidth);
-			dimensionObject.maxNameHeight = Math.max(d.BBox.height, dimensionObject.maxNameHeight);
+			dimensions.maxNameWidth = Math.max(d.BBox.width, dimensions.maxNameWidth);
+			dimensions.maxNameHeight = Math.max(d.BBox.height, dimensions.maxNameHeight);
 		})
 	;
-	var maxColTextHeight = 0;
-	rowlabels
+	collabels
 		.each(function(d) {
 			d.BBox = this.getBBox();
-			maxColTextHeight = Math.max(maxColTextHeight, d.BBox.height);
 			metrics.maxNameWidth = Math.max(d.BBox.width, metrics.maxNameWidth);
 			metrics.maxNameHeight = Math.max(d.BBox.height, metrics.maxNameHeight);
 		})
 	;
 	
-	rowScale.domain([-1, rowData.length]).range([maxColTextHeight, h]);
-	heightScale.domain([-1, rowData.length]).range([0, h - maxColTextHeight]);
+	rowScale.domain([-1, rowData.length]).range([metrics.maxNameHeight, h]);
+	heightScale.domain([-1, rowData.length]).range([0, h - metrics.maxNameHeight]);
 	var	rowSpacing = heightScale.range().pop()/(rowData.length+1),
 		rowLabelMargin = 10;
 
 //			colScale.domain([-1, colData.length]).range([maxRowTextWidth, w]);
 //			widthScale.domain([-1, colData.length]).range([0, w - maxRowTextWidth]);
-	widthScale.domain([0, colData.length-1]).range([0, w - maxRowTextWidth]);
+	widthScale.domain([0, colData.length-1]).range([0, w - dimensions.maxNameWidth]);
 	var	colSpacing = widthScale.range().pop()/(colData.length),
 	gridSize = Math.min(rowSpacing, colSpacing);
-	colScale.domain([0, colData.length-1]).range([maxRowTextWidth+rowLabelMargin+rowSpacing, w-rowSpacing]);
+	colScale.domain([0, colData.length-1]).range([dimensions.maxNameWidth+rowLabelMargin+rowSpacing, w-rowSpacing]);
 
 	rowlabels
 		.attr("x", colScale(-rowSpacing/colSpacing)-rowLabelMargin)
@@ -172,10 +188,17 @@ function createHeat(data, selectedDimension, metrics, dimensions) {
 		.attr("x2", colScale(colData.length))
 	;
 			
-	rows
-		.attr("transform", function(d, i) {return "translate(0," + rowScale(i) + ")";})
-	cols
-		.attr("transform", function(d, i) {return "translate(" + colScale(i) + ",0)";})
+	rows.call(function() {fadeIn(this, rowScale);});
+//		.attr("transform", function(d, i) {return "translate(0," + rowScale(i) + ")";})
+	;
+//	cols
+	vis.selectAll("g.col")
+		.data(colData,  function(d) {return d.name;})
+//			.call(function() {fadeIn(this, colScale);})
+			.transition()
+				.duration(500)
+				.attr("transform", function(d, i) {return "translate(" + colScale(i) + ",0)";})
+	;
 
 	cols.append("svg:line")
 		.attr("y1", rowScale(-1))
@@ -196,18 +219,18 @@ function createHeat(data, selectedDimension, metrics, dimensions) {
 //			var gridSize = Math.min(widthScale.range().pop()/(colData.length+1), heightScale.range().pop()/(rowData.length+1));
 			
 	function isVisible(d) {
-		return d[selectedDimension] != "*";
+		return d[dimensions.name] != "*";
 	}
 
-	function visibleMetrics(metricObject) {
-		switch (metricObject.name) {
+	function visibleMetrics(metric) {
+		switch (metric.name) {
 			default:
 				return true;
 		}
 	}
 
-	metrics.objects.filter(visibleMetrics).forEach(function(metricObject) {
-		metricObject.scale.domain([0, metricObject.max]).range([0, gridSize/1.5]);
+	metrics.objects.filter(visibleMetrics).forEach(function(metric) {
+		metric.scale.domain([0, metric.max]).range([0, gridSize/1.5]);
 	});
 
 //	var existingCells = vis.selectAll("g.cell")

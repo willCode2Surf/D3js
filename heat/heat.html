@@ -115,7 +115,7 @@
 							format: formats[i]
 						});
 						metrics.maxNameWidth = 0;
-						metrics.maxNameHeight = 9999;
+						metrics.maxNameHeight = 0;
 					
 						break;
 					case "D":
@@ -125,7 +125,7 @@
 							valueNames: new Array(),
 							valueObjects: new Array(),
 							maxNameWidth: 0,
-							maxNameHeight: 9999
+							maxNameHeight: 0
 						});
 						break;
 					case "B":
@@ -159,7 +159,7 @@
 						.text(function(d) {return d;})
 						.on("click", function(d) {
 //							clearFade();
-							createHeat(data, d, metrics, dimensions);
+							createHeat(data, dimensions.objects[dimensions.names.indexOf(d)], metrics);
 						})
 			;
 		});
