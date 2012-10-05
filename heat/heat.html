@@ -114,13 +114,18 @@
 							scale: d3.scale.pow().exponent(0.5),
 							format: formats[i]
 						});
+						metrics.maxNameWidth = 0;
+						metrics.maxNameHeight = 9999;
+					
 						break;
 					case "D":
 						dimensions.names.push(i);
 						dimensions.objects.push({
 							name: i,
 							valueNames: new Array(),
-							valueObjects: new Array()
+							valueObjects: new Array(),
+							maxNameWidth: 0,
+							maxNameHeight: 9999
 						});
 						break;
 					case "B":

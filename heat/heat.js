@@ -45,11 +45,15 @@ function fadeout(selection)
 }
 
 function createHeat(data, selectedDimension, metrics, dimensions) {
-	var rowData = dimensions.objects[dimensions.names.indexOf(selectedDimension)].valueObjects;
+	var dimensionObject = dimensions.objects[dimensions.names.indexOf(selectedDimension)];
+//	var rowData = dimensions.objects[dimensions.names.indexOf(selectedDimension)].valueObjects;
+	var rowData = dimensionObject.valueObjects;
 	var rowNames = dimensions.objects[dimensions.names.indexOf(selectedDimension)].valueNames;
 	var colData = metrics.objects;
 	var colNames = metrics.names;
 
+	console.log(selectedDimension);
+	console.log(dimensionObject.name);
 	var grid = new Array();
 	data.filter(isVisible).map(function(data) {
 		metrics.objects.filter(visibleMetrics).map(function(metricObject) {
@@ -132,14 +136,20 @@ function createHeat(data, selectedDimension, metrics, dimensions) {
 		.each(function(d) {
 			d.BBox = this.getBBox();
 			maxRowTextWidth = Math.max(maxRowTextWidth, d.BBox.width);
-	})
+			dimensionObject.maxNameWidth = Math.max(d.BBox.width, dimensionObject.maxNameWidth);
+			dimensionObject.maxNameHeight = Math.max(d.BBox.height, dimensionObject.maxNameHeight);
+		})
+	;
 	var maxColTextHeight = 0;
 	rowlabels
 		.each(function(d) {
 			d.BBox = this.getBBox();
 			maxColTextHeight = Math.max(maxColTextHeight, d.BBox.height);
-	})
-
+			metrics.maxNameWidth = Math.max(d.BBox.width, metrics.maxNameWidth);
+			metrics.maxNameHeight = Math.max(d.BBox.height, metrics.maxNameHeight);
+		})
+	;
+	
 	rowScale.domain([-1, rowData.length]).range([maxColTextHeight, h]);
 	heightScale.domain([-1, rowData.length]).range([0, h - maxColTextHeight]);
 	var	rowSpacing = heightScale.range().pop()/(rowData.length+1),
@@ -221,7 +231,6 @@ function createHeat(data, selectedDimension, metrics, dimensions) {
 			.duration(800)
 			.attr("transform", function(d) {return "translate("+colScale(d.x)+","+rowScale(d.y)+")";})
 	;
-//	console.log(shitfuck.selectAll("circle"));
 	
 	cells.selectAll("circle")
     	.transition()
