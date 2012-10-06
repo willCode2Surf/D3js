@@ -23,6 +23,7 @@ function createDimensionOptions(dimensions, selectedDimension) {
 
 function fadeout(selection)
 {
+	console.log("fade out");
 	console.log(selection);
 	selection.transition()
 		.duration(500)
@@ -46,18 +47,29 @@ function fadeout(selection)
 //	console.log(xxx1);
 }
 
-function fadeIn(selection, scale)
+function fadeInRow(selection, scale)
 {
-	console.log(selection);
 	selection.transition()
 		.duration(500)
 		.attr("transform", function(d, i) {return "translate(0," + scale(i) + ")";})
 	;
-//	selection.selectAll("circle")
-//		.transition()
-//			.duration(500)
-//			.attr("r", 0)
-//	;
+
+	selection.selectAll("text, line, rect")
+		.transition()
+			.delay(0)
+			.duration(500)
+			.style("fill-opacity", 1)
+			.style("stroke-opacity", 1)
+	;
+}
+
+function fadeInCol(selection, scale)
+{
+	selection.transition()
+		.duration(500)
+		.attr("transform", function(d, i) {return "translate("+scale(i) + ",0)";})
+	;
+
 	selection.selectAll("text, line, rect")
 		.transition()
 			.delay(0)
@@ -94,27 +106,18 @@ function createHeat(data, dimensions, metrics) {
 		});
 	});
 	
-	var crap = vis.selectAll("g.crap")
-		.data(rowData)
-		.enter()
-	;
-	crapg = crap.append("svg:g")
-		.attr("class", "crap")
-	;
-	crapg.append("svg:g")
-		.attr("class", "morecrap")
-	;
+//	var rows = vis.selectAll("g.row").data(rowData);
+//	var rowlabels = vis.selectAll("g.row text").data(rowData,  function(d) {return d.name;});
+	
+	var rows = vis.selectAll("g.row").data(rowData,  function(d) {return d.name;});
+	var cols = vis.selectAll("g.col").data(colData,  function(d) {return d.name;});
 	
 	//Remove old rows
-	vis.selectAll("g.row")
-		.data(rowData,  function(d) {return d.name;})
-		.exit().call(function() {fadeout(this);})
-	;
+	rows.exit().call(function() {fadeout(this);});
+	
 	//Remove old columns
-	vis.selectAll("g.col")
-		.data(colData,  function(d) {return d.name;})
-		.exit().call(function() {fadeout(this);})
-	;
+	cols.exit().call(function() {fadeout(this);});
+	
 	//Remove old cells
 	vis.selectAll("g.cell")
 		.data(grid,  function(d) {return d.x+","+d.y;})
@@ -122,27 +125,23 @@ function createHeat(data, dimensions, metrics) {
 	;
 	
 	//Rows
-	var rows = vis.selectAll("g.row")
-		.data(rowData,  function(d) {return d.name;})
-		.enter().append("svg:g")
-			.attr("class", "row")
+	var newrows = rows.enter().append("svg:g")
+		.attr("class", "row")
 	;
 
 	//Columns			
-	var cols = vis.selectAll("g.col")
-		.data(colData,  function(d) {return d.name;})
-		.enter().append("svg:g")
-			.attr("class", "col")
+	var newcols = cols.enter().append("svg:g")
+		.attr("class", "col")
 	;
 			
-	rowlabels = rows.append("svg:text")
+	var newrowlabels = newrows.append("svg:text")
 		.style("text-anchor", "end")
 	;
-	collabels = cols.append("svg:text")
+	var collabels = newcols.append("svg:text")
 		.style("text-anchor", "middle")
 	;
 
-	rowlabels
+	newrowlabels
 		.append("tspan")
 		.text(function(d) {return d.name;})
 	;
@@ -150,8 +149,8 @@ function createHeat(data, dimensions, metrics) {
 		.append("tspan")
 		.text(function(d) {return d.name;})
 	;
-			
-	rowlabels
+	
+	newrowlabels
 		.each(function(d) {
 			d.BBox = this.getBBox();
 			dimensions.maxNameWidth = Math.max(d.BBox.width, dimensions.maxNameWidth);
@@ -178,32 +177,33 @@ function createHeat(data, dimensions, metrics) {
 	gridSize = Math.min(rowSpacing, colSpacing);
 	colScale.domain([0, colData.length-1]).range([dimensions.maxNameWidth+rowLabelMargin+rowSpacing, w-rowSpacing]);
 
-	rowlabels
+	//Position new and updated row and column labels
+	newrowlabels
+//	rows.selectAll("text")
 		.attr("x", colScale(-rowSpacing/colSpacing)-rowLabelMargin)
 		.attr("dy", "0.5ex")
 	;
+	collabels
+		.attr("x", "0")
+		.attr("dy", "0ex")
+	;
 			
-	rows.append("svg:line")
+	newrows.append("svg:line")
 		.attr("x1", colScale(-rowSpacing/colSpacing))
 		.attr("x2", colScale(colData.length))
 	;
-			
-	rows.call(function() {fadeIn(this, rowScale);});
-//		.attr("transform", function(d, i) {return "translate(0," + rowScale(i) + ")";})
-	;
-//	cols
-	vis.selectAll("g.col")
-		.data(colData,  function(d) {return d.name;})
-//			.call(function() {fadeIn(this, colScale);})
-			.transition()
-				.duration(500)
-				.attr("transform", function(d, i) {return "translate(" + colScale(i) + ",0)";})
-	;
-
-	cols.append("svg:line")
+	newcols.append("svg:line")
 		.attr("y1", rowScale(-1))
 		.attr("y2", rowScale(rowData.length))
 	;
+	
+//	Fade in new and updated rows and columns
+	rows.call(function(d, i) {fadeInRow(this, rowScale);});
+	cols.call(function(d, i) {fadeInCol(this, colScale);});
+
+		
+
+
 
 	if (false) {
 		vis.append("svg:g")
