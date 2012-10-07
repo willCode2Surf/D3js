@@ -21,69 +21,122 @@ function createDimensionOptions(dimensions, selectedDimension) {
 	$(".xcontrol_select_all").click();
 }
 
-function fadeout(selection)
+function fadeOutRow(selection)
 {
-	console.log("fade out");
-	console.log(selection);
 	selection.transition()
-		.duration(500)
+		.delay(function(d, i) {return i*10;})
+		.duration(1000)
+		.attr("transform", function(d, i) {return "translate(0,0)";})
+		.style("opacity", 0)
 		.each("end",function() { 
 			d3.select(this).remove();					
 		})
 	;
-//	selection.selectAll("circle")
-//		.transition()
-//			.duration(500)
-//			.attr("r", 0)
-//	;
-//	var xxx1 = selection.selectAll("text, line, rect")
-//		.transition()
-//			.duration(400)
-//			.delay(100)
-//			.style("fill-opacity", 0)
-//			.style("stroke-opacity", 0)
-//	;
-//	console.log("the lines being removed");
-//	console.log(xxx1);
+}
+
+function fadeOutCol(selection)
+{
+	selection.transition()
+		.delay(function(d, i) {return i*10;})
+		.duration(1000)
+		.attr("transform", function(d, i) {return "translate(0,0)";})
+		.style("opacity", 0)
+		.each("end",function() { 
+			d3.select(this).remove();					
+		})
+	;
+}
+
+function fadeOutCell(selection)
+{	
+	var	rowExitScale = rowScale.copy().domain([-1, 2]),
+		colExitScale = colScale.copy().domain([-1, 2]);
+
+	selection.transition()
+		.delay(function(d, i) {return i*10;})
+		.duration(800)
+		.attr("transform", function(d) {return "translate("+colExitScale(Math.random())+","+rowExitScale(Math.random())+")";})
+		.style("opacity", 0)
+		.each("end",function() { 
+			d3.select(this).remove();					
+		})
+	;
+
+	selection.select("circle")
+		.transition()
+			.delay(function(d, i) {return i*10;})
+			.duration(800)
+			.attr("r", 0)
+	;
+
+	selection.select("text")
+		.transition()
+			.delay(function(d, i) {return i*10;})
+			.duration(800)
+			.style("font-size", 0)
+	;
 }
 
 function fadeInRow(selection, scale)
 {
 	selection.transition()
-		.duration(500)
+		.delay(function(d, i) {return i*10;})
+		.duration(1000)
 		.attr("transform", function(d, i) {return "translate(0," + scale(i) + ")";})
-	;
-
-	selection.selectAll("text, line, rect")
-		.transition()
-			.delay(0)
-			.duration(500)
-			.style("fill-opacity", 1)
-			.style("stroke-opacity", 1)
+		.style("opacity", 1)
 	;
 }
 
 function fadeInCol(selection, scale)
 {
 	selection.transition()
-		.duration(500)
+		.delay(function(d, i) {return i*10;})
+		.duration(1000)
 		.attr("transform", function(d, i) {return "translate("+scale(i) + ",0)";})
-	;
-
-	selection.selectAll("text, line, rect")
-		.transition()
-			.delay(0)
-			.duration(500)
-			.style("fill-opacity", 1)
-			.style("stroke-opacity", 1)
+		.style("opacity", 1)
 	;
 }
 
+function fadeInCell(selection) {
+	selection
+		.transition()
+			.delay(function(d, i) {return i*10;})
+			.duration(1000)
+			.attr("transform", function(d) {return "translate("+colScale(d.x)+","+rowScale(d.y)+")";})
+	;
+
+	selection.select("circle")
+		.transition()
+			.delay(function(d, i) {return i*10;})
+	        .duration(1000)
+			.style("opacity", 1)
+			.attr("r", function(d) {return metrics.objects[d.x].scale(d.v);})
+	;
+
+	selection.select("text")
+		.transition()
+			.delay(function(d, i) {return i*10;})
+	        .duration(1000)
+			.style("opacity", 1)
+			.style("font-size", 12)
+	;
+}
 function createHeat(data, dimensions, metrics) {
 	var rowData = dimensions.valueObjects;
 	var rowNames = dimensions.valueNames;
 	var colData = metrics.objects;
 	var colNames = metrics.names;
+
+	function isVisible(d) {
+		return d[dimensions.name] != "*";
+	}
+
+	function visibleMetrics(metric) {
+		switch (metric.name) {
+			default:
+				return true;
+		}
+	}
 
 	var grid = new Array();
 	data.filter(isVisible).map(function(data) {
@@ -93,11 +146,15 @@ function createHeat(data, dimensions, metrics) {
 				case "%":
 					formattedValue = Math.round(100*value)+"%";
 					break;
+				case "z":
+					formattedValue = Math.round(10*value)/10;
+					break;
 				default:
 					formattedValue = value;
 			}
 			metric.max = Math.max(metric.max, value);
 			grid.push({
+				name: data[dimensions.name]+","+metric.name,
 				y: rowNames.indexOf(data[dimensions.name]),
 				x: colNames.indexOf(metric.name),
 				v: value,
@@ -106,47 +163,39 @@ function createHeat(data, dimensions, metrics) {
 		});
 	});
 	
-//	var rows = vis.selectAll("g.row").data(rowData);
-//	var rowlabels = vis.selectAll("g.row text").data(rowData,  function(d) {return d.name;});
-	
-	var rows = vis.selectAll("g.row").data(rowData,  function(d) {return d.name;});
-	var cols = vis.selectAll("g.col").data(colData,  function(d) {return d.name;});
-	
-	//Remove old rows
-	rows.exit().call(function() {fadeout(this);});
-	
-	//Remove old columns
-	cols.exit().call(function() {fadeout(this);});
-	
-	//Remove old cells
-	vis.selectAll("g.cell")
-		.data(grid,  function(d) {return d.x+","+d.y;})
-		.exit().call(function() {fadeout(this);})
-	;
+	var	rows = vis.selectAll("g.row").data(rowData, function(d) {return d.name;}),
+		cols = vis.selectAll("g.col").data(colData, function(d) {return d.name;}),
+		cells = vis.selectAll("g.cell").data(grid, function(d) {return d.name;});
+
+	rows.exit().call(fadeOutRow);
+	cols.exit().call(fadeOutCol);
+	cells.exit().call(fadeOutCell);
 	
 	//Rows
-	var newrows = rows.enter().append("svg:g")
+	var newRows = rows.enter().append("svg:g")
 		.attr("class", "row")
+		.style("opacity", "0")
 	;
 
 	//Columns			
-	var newcols = cols.enter().append("svg:g")
+	var newCols = cols.enter().append("svg:g")
 		.attr("class", "col")
+		.style("opacity", "0")
 	;
 			
-	var newrowlabels = newrows.append("svg:text")
+	var newrowlabels = newRows.append("svg:text")
 		.style("text-anchor", "end")
 	;
-	var collabels = newcols.append("svg:text")
+	var collabels = newCols.append("svg:text")
 		.style("text-anchor", "middle")
 	;
 
 	newrowlabels
-		.append("tspan")
+		.append("svg:tspan")
 		.text(function(d) {return d.name;})
 	;
 	collabels
-		.append("tspan")
+		.append("svg:tspan")
 		.text(function(d) {return d.name;})
 	;
 	
@@ -170,29 +219,33 @@ function createHeat(data, dimensions, metrics) {
 	var	rowSpacing = heightScale.range().pop()/(rowData.length+1),
 		rowLabelMargin = 10;
 
-//			colScale.domain([-1, colData.length]).range([maxRowTextWidth, w]);
-//			widthScale.domain([-1, colData.length]).range([0, w - maxRowTextWidth]);
 	widthScale.domain([0, colData.length-1]).range([0, w - dimensions.maxNameWidth]);
 	var	colSpacing = widthScale.range().pop()/(colData.length),
 	gridSize = Math.min(rowSpacing, colSpacing);
 	colScale.domain([0, colData.length-1]).range([dimensions.maxNameWidth+rowLabelMargin+rowSpacing, w-rowSpacing]);
 
+	var	rowEntryScale = rowScale.copy().domain([-1, 2]),
+		colEntryScale = colScale.copy().domain([-1, 2]);
+
+	metrics.objects.filter(visibleMetrics).forEach(function(metric) {
+		metric.scale.domain([0, metric.max]).range([0, gridSize/1.5]);
+	});
+	
 	//Position new and updated row and column labels
-	newrowlabels
-//	rows.selectAll("text")
+	rows.select("text")
 		.attr("x", colScale(-rowSpacing/colSpacing)-rowLabelMargin)
 		.attr("dy", "0.5ex")
 	;
-	collabels
+	cols.select("text")
 		.attr("x", "0")
 		.attr("dy", "0ex")
 	;
 			
-	newrows.append("svg:line")
+	newRows.append("svg:line")
 		.attr("x1", colScale(-rowSpacing/colSpacing))
 		.attr("x2", colScale(colData.length))
 	;
-	newcols.append("svg:line")
+	newCols.append("svg:line")
 		.attr("y1", rowScale(-1))
 		.attr("y2", rowScale(rowData.length))
 	;
@@ -201,10 +254,7 @@ function createHeat(data, dimensions, metrics) {
 	rows.call(function(d, i) {fadeInRow(this, rowScale);});
 	cols.call(function(d, i) {fadeInCol(this, colScale);});
 
-		
-
-
-
+	//Add a border around the grid
 	if (false) {
 		vis.append("svg:g")
 			.attr("class", "border")
@@ -214,58 +264,24 @@ function createHeat(data, dimensions, metrics) {
 				.attr("height", heightScale(rowData.length))
 		;
 	}
-
-	//Have the grid now
-//			var gridSize = Math.min(widthScale.range().pop()/(colData.length+1), heightScale.range().pop()/(rowData.length+1));
-			
-	function isVisible(d) {
-		return d[dimensions.name] != "*";
-	}
-
-	function visibleMetrics(metric) {
-		switch (metric.name) {
-			default:
-				return true;
-		}
-	}
-
-	metrics.objects.filter(visibleMetrics).forEach(function(metric) {
-		metric.scale.domain([0, metric.max]).range([0, gridSize/1.5]);
-	});
-
-//	var existingCells = vis.selectAll("g.cell")
-//		.data(grid, function(d) {return d.x+","+d.y;})
-//	;
-	var newCells = vis.selectAll("g.cell")
-		.data(grid, function(d) {return d.x+","+d.y;})
+	
+	var newCells = cells
 		.enter().append("svg:g")
 			.attr("class", "cell")
-			.attr("transform", function(d) {return "translate("+colScale(d.x)+","+rowScale(d.y)+")";})
-	;
-	newCells.append("svg:circle");
-	newCells.append("svg:text");
-	
-	var cells = vis.selectAll("g.cell").data(grid, function(d) {return d.x+","+d.y;});
-//	console.log("cells");
-
-	cells
-		.transition()
-			.delay(0)
-			.duration(800)
-			.attr("transform", function(d) {return "translate("+colScale(d.x)+","+rowScale(d.y)+")";})
-	;
-	
-	cells.selectAll("circle")
-    	.transition()
-	    	.delay(0)
-	        .duration(800)
-			.attr("r", function(d) {return metrics.objects[d.x].scale(d.v);})
+			.attr("transform", function(d) {return "translate("+colEntryScale(Math.random())+","+rowEntryScale(Math.random())+")";})
 	;
 
-	cells.selectAll("text")
-   		.transition()
-			.style("text-anchor", "middle")
-			.attr("dy", "0.5ex")
+	newCells.append("svg:circle")
+		.attr("r", 0)
+	;
+	newCells.append("svg:text")
+		.style("text-anchor", "middle")
+		.attr("dy", "0.5ex")
+		.style("opacity", 0)
+		.style("font-size", 0)
+		.append("svg:tspan")
 			.text(function(d) {return d.f;})
 	;
+	
+	cells.call(fadeInCell);
 }

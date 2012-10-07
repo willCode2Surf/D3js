@@ -54,7 +54,7 @@
 	</div>
 
 
-	<script type="text/javascript">	
+	<script type="text/javascript">
 		function checkAll(field) {
 			for (i = 0; i < field.length; i++) {
 				$(field[i]).attr('checked','checked');
@@ -77,7 +77,6 @@
 		rowScale = d3.scale.linear().range([200, 100]).domain([5,1]),
 		widthScale = d3.scale.linear(),
 		heightScale = d3.scale.linear();
-		sizeScale = d3.scale.pow().exponent(0.5);
 		
 		var vis = d3.select("#visualization")
 			.append("svg:svg")
@@ -116,7 +115,6 @@
 						});
 						metrics.maxNameWidth = 0;
 						metrics.maxNameHeight = 0;
-					
 						break;
 					case "D":
 						dimensions.names.push(i);
