@@ -1,3 +1,7 @@
+String.prototype.makeId = function() {
+    return this.replace(/\s/g, '');
+};
+
 function createDimensionOptions(dimensions, selectedDimension) {
 	var content = "";
 	dimensions.objects.forEach(function(dimension) {
@@ -5,30 +9,83 @@ function createDimensionOptions(dimensions, selectedDimension) {
 			content += "<div style='float:left;padding-right:10px;padding-top:10px;'>";
 			content += "<span class='categoryTitle'>"+dimension.name+"</span><br />";
 			content += "<div style='border-left:2px solid #f24254;position:relative;left:1px;top:0'>";
-			content += "<label class='crap'><input type='checkbox' class='xcontrol_select_all' id='all_"+dimension.name+"' style='vertical-align: middle; margin: 0px' /> Visualize all</label>";
-//			content += "<input type='checkbox' class='control_select_all' id='all_"+dimension.name+"' style='vertical-align: middle; margin: 0px' /> <span>Visualize all</span><br />";
+			content += "<label class='crap'><input type='checkbox' class='control_select_all' id='"+dimension.name.makeId()+"' style='vertical-align: middle; margin: 0px' /> Visualize all</label>";
 
 			for(i=0;i<dimension.valueObjects.length;i++) {
-				content += "<label class='crap'><input type='checkbox' name='control_seaters' class='control' id='" + dimension.valueObjects[i].name + "' /> <span id='text_" + dimension.valueObjects[i].name + "'>" + dimension.valueObjects[i].name + "</span></label>"
-//				content += "<input type='checkbox' name='control_seaters' class='control' id='" + dimension.valueObjects[i].name + "' /> <span class='checker' id='text_" + dimension.valueObjects[i].name + "'>" + dimension.valueObjects[i].name + "</span><br />"
+//				content += "<label class='crap'><input type='checkbox' name='control_seaters' class='control' id='" + dimension.valueObjects[i].name + "' /> <span id='text_" + dimension.valueObjects[i].name + "'>" + dimension.valueObjects[i].name + "</span></label>"
+				content += "<label class='crap'><input type='checkbox' class='control' id='" + dimension.valueObjects[i].name.makeId() + "' dimension='"+dimension.name.makeId()+"' /> <span id='text_" + dimension.valueObjects[i].name + "'>" + dimension.valueObjects[i].name + "</span></label>"
 			}
 			content += "</div></div>";
 		}
 		
 	});
 	$("#scrollPaneContent").html(content);
+	assignEventListeners();
+
+//	$(".control_select_all").attr('checked','checked');
+	$(".control_select_all").click();
 	$("input:checkbox").uniform();
-	$(".xcontrol_select_all").click();
 }
 
-function createHeat(data, dimensions, metrics) {
-	var rowData = dimensions.valueObjects;
-	var rowNames = dimensions.valueNames;
+function assignEventListeners() {
+	d3.selectAll(".control").on("click", function(d, i) {
+		var peers = d3.selectAll("[dimension="+this.getAttribute("dimension")+"]");
+		console.log(peers);
+		console.log(peers[0]);
+		peers[0].forEach(function(d, i) {
+			console.log(d);
+			if (i == 3) {return;}
+//			if (!d.checked) {
+//				console.log(d);				
+//			}
+		});
+//		var shit = d3.select("#"+this.getAttribute("dimension"));
+		d3.select("#"+this.getAttribute("dimension"))
+			.each(function() {
+				if (this.checked) {
+					this.click();
+				}
+			})
+		;
+	});
+}
+
+function createHeat(data, dimension, metrics) {
+	dimensions.objects.forEach(function(d) {
+		d.selected = false;
+	});
+	dimension.selected = true;
+	
+	console.log(dimensions);
+	var rowData = dimension.valueObjects;
+	var rowNames = dimension.valueNames;
 	var colData = metrics.objects;
 	var colNames = metrics.names;
 
+	var look = {};
+	dimensions.objects.map(function(d) {
+		if(d.selected) {
+			look[d.name] = d.valueNames;			
+		} else {
+			look[d.name] = ["*"];
+		}
+	});
+
+	$(".control_select_all").click();
+	$.uniform.update();
+
+//	console.log(look);
 	function isVisible(d) {
-		return d[dimensions.name] != "*";
+		for(i in look) {
+			if (look[i].indexOf(d[i]) < 0) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	function xisVisible(d) {
+		return d[dimension.name] != "*";
 	}
 
 	function visibleMetrics(metric) {
@@ -52,14 +109,14 @@ function createHeat(data, dimensions, metrics) {
 				default:
 					formattedValue = value;
 			}
-			metric.max = Math.max(metric.max, value);
 			grid.push({
-				name: data[dimensions.name]+","+metric.name,
-				y: rowNames.indexOf(data[dimensions.name]),
+				name: data[dimension.name]+","+metric.name,
+				y: rowNames.indexOf(data[dimension.name]),
 				x: colNames.indexOf(metric.name),
 				v: value,
 				f: formattedValue
 			});
+			metric.max = Math.max(metric.max, value);
 		});
 	});
 	
@@ -102,8 +159,8 @@ function createHeat(data, dimensions, metrics) {
 	newrowlabels
 		.each(function(d) {
 			d.BBox = this.getBBox();
-			dimensions.maxNameWidth = Math.max(d.BBox.width, dimensions.maxNameWidth);
-			dimensions.maxNameHeight = Math.max(d.BBox.height, dimensions.maxNameHeight);
+			dimension.maxNameWidth = Math.max(d.BBox.width, dimension.maxNameWidth);
+			dimension.maxNameHeight = Math.max(d.BBox.height, dimension.maxNameHeight);
 		})
 	;
 	collabels
@@ -119,10 +176,10 @@ function createHeat(data, dimensions, metrics) {
 	var	rowSpacing = heightScale.range().pop()/(rowData.length+1),
 		rowLabelMargin = 10;
 
-	widthScale.domain([0, colData.length-1]).range([0, w - dimensions.maxNameWidth]);
+	widthScale.domain([0, colData.length-1]).range([0, w - dimension.maxNameWidth]);
 	var	colSpacing = widthScale.range().pop()/(colData.length),
 	gridSize = Math.min(rowSpacing, colSpacing);
-	colScale.domain([0, colData.length-1]).range([dimensions.maxNameWidth+rowLabelMargin+rowSpacing, w-rowSpacing]);
+	colScale.domain([0, colData.length-1]).range([dimension.maxNameWidth+rowLabelMargin+rowSpacing, w-rowSpacing]);
 
 	var	rowEntryScale = rowScale.copy().domain([-1, 2]),
 		colEntryScale = colScale.copy().domain([-1, 2]);
