@@ -121,10 +121,12 @@
 						dimensions.names.push(i);
 						dimensions.objects.push({
 							name: i,
+							selected: false,
 							valueNames: new Array(),
 							valueObjects: new Array(),
 							maxNameWidth: 0,
-							maxNameHeight: 0
+							maxNameHeight: 0,
+							values: {}
 						});
 						break;
 					case "B":
@@ -144,11 +146,12 @@
 							});
 						}
 					}
+					dimension.values[d[dimension.name]] = {selected: false};
 				});
 			});
 			console.log(dimensions);
 
-			var selectedDimension = "Market";
+			var selectedDimension = "xxx";
 			createDimensionOptions(dimensions, selectedDimension);
 
 			d3.select("#dimension-selection").selectAll("li")
