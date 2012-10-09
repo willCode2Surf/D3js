@@ -1,5 +1,5 @@
 String.prototype.makeId = function() {
-    return this.replace(/\s/g, '');
+    return this.replace(/\s|\\|\//g, '_');
 };
 
 function createDimensionOptions(dimensions, selectedDimension) {
@@ -7,13 +7,14 @@ function createDimensionOptions(dimensions, selectedDimension) {
 	dimensions.objects.forEach(function(dimension) {
 		if (dimension.name != selectedDimension) {
 			content += "<div style='float:left;padding-right:10px;padding-top:10px;'>";
-			content += "<span class='categoryTitle'>"+dimension.name+"</span><br />";
+			content += "<span class='categoryTitle'>"+dimension.name.makeId()+"</span><br />";
 			content += "<div style='border-left:2px solid #f24254;position:relative;left:1px;top:0'>";
-			content += "<label class='crap'><input type='checkbox' class='control_select_all' id='"+dimension.name.makeId()+"' style='vertical-align: middle; margin: 0px' /> Visualize all</label>";
+//			content += "<label class='crap'><input type='checkbox' class='control_select_all' id='"+dimension.name.makeId()+"' style='vertical-align: middle; margin: 0px' /> Visualize all</label>";
+			content += "<label class='crap'><input type='checkbox' class='control_select_all' id='" + dimension.name.makeId() + "' /> <span id='text_" + dimension.name.makeId() + "'> Visualize All</span></label>"
 
 			for(i=0;i<dimension.valueObjects.length;i++) {
 //				content += "<label class='crap'><input type='checkbox' name='control_seaters' class='control' id='" + dimension.valueObjects[i].name + "' /> <span id='text_" + dimension.valueObjects[i].name + "'>" + dimension.valueObjects[i].name + "</span></label>"
-				content += "<label class='crap'><input type='checkbox' class='control' id='" + dimension.valueObjects[i].name.makeId() + "' dimension='"+dimension.name.makeId()+"' /> <span id='text_" + dimension.valueObjects[i].name + "'>" + dimension.valueObjects[i].name + "</span></label>"
+				content += "<label class='crap'><input type='checkbox' class='control' id='" + dimension.valueObjects[i].name.makeId() + "' dimension='"+dimension.name.makeId()+"' /> <span id='text_" + dimension.valueObjects[i].name.makeId() + "'>" + dimension.valueObjects[i].name.makeId() + "</span></label>"
 			}
 			content += "</div></div>";
 		}
@@ -23,31 +24,57 @@ function createDimensionOptions(dimensions, selectedDimension) {
 	assignEventListeners();
 
 //	$(".control_select_all").attr('checked','checked');
-	$(".control_select_all").click();
+//	$(".control_select_all").click();
+//	$(".control").click();
 	$("input:checkbox").uniform();
+	$.uniform.update();
 }
 
 function assignEventListeners() {
 	d3.selectAll(".control").on("click", function(d, i) {
-		var peers = d3.selectAll("[dimension="+this.getAttribute("dimension")+"]");
-		console.log(peers);
-		console.log(peers[0]);
-		peers[0].forEach(function(d, i) {
-			console.log(d);
-			if (i == 3) {return;}
-//			if (!d.checked) {
-//				console.log(d);				
-//			}
-		});
-//		var shit = d3.select("#"+this.getAttribute("dimension"));
-		d3.select("#"+this.getAttribute("dimension"))
-			.each(function() {
-				if (this.checked) {
-					this.click();
-				}
-			})
-		;
+		clickDimension(this);
+		$.uniform.update();
 	});
+	
+	d3.selectAll(".control_select_all").on("click", function(d, i) {
+		clickAllDimensions(this);
+		$.uniform.update();
+	});
+}
+
+function clickDimension(e) {
+	var	visualizeAll = d3.select("#"+e.getAttribute("dimension")),
+		checkedDimensions = $(".checked [dimension="+e.getAttribute("dimension")+"]").length,
+		allDimensions = $("[dimension="+e.getAttribute("dimension")+"]").length;
+	
+	if (e.parentElement.getAttribute("class") == "checker") {
+		//this was not checked, is being checked
+		checkedDimensions += 1;
+	} else {
+		//this was checked, is being unchecked
+		checkedDimensions -= 1;			
+	}
+	
+	if (allDimensions == checkedDimensions) {
+		visualizeAll.attr("checked", "checked");
+	} else {
+		if (visualizeAll.attr("checked") != null) {
+			visualizeAll.attr("checked", null);
+		}
+	}
+
+}
+
+function clickAllDimensions(e) {
+	console.log("all clicked");
+	return;
+	
+	$(".checked [dimension="+e.id+"]").click();
+	if ($(".checked #"+e.id).length == 0) {
+		//this was not checked, is being checked
+		console.log("aa");
+		$("[dimension="+e.id+"]").click();
+	}
 }
 
 function createHeat(data, dimension, metrics) {
