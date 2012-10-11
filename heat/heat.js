@@ -32,7 +32,8 @@ function createDimensionOptions(dimensions, selectedDimension) {
 
 function assignEventListeners() {
 	d3.selectAll(".control").on("click", function(d, i) {
-		clickDimension(this);
+		clickTest(this);
+//		clickDimension(this);
 		$.uniform.update();
 	});
 	
@@ -40,6 +41,14 @@ function assignEventListeners() {
 		clickAllDimensions(this);
 		$.uniform.update();
 	});
+}
+
+function clickTest(e) {
+	var all = $("#" + e.getAttribute("dimension"));
+	all.attr("checked", "checked");
+	// all.parent().addClass("checked");
+	// all.parent().parent().addClass("active");
+	// console.log(all.parent().parent());
 }
 
 function clickDimension(e) {
@@ -66,18 +75,20 @@ function clickDimension(e) {
 }
 
 function clickAllDimensions(e) {
-	console.log($("#"+e.id));
+	console.log($("[dimension="+e.id+"]").parent().parent());
 //	return;
 	
-	if (d3.select("#"+e.id).attr("checked") == null) {
-		d3.selectAll("[dimension="+e.id+"]").attr("checked", "checked");
+	if ($(e).parent().hasClass("checked")) {
+		// $("[dimension="+e.id+"]").attr("checked", function() {
+			// console.log(this);
+			// if (this.attr("checked") != null) {
+				// this.attr("checked", null);
+			// }
+		// });
 	} else {
-		d3.selectAll("[dimension="+e.id+"]").attr("checked", function() {
-			console.log(this);
-			if (this.attr("checked") != null) {
-				this.attr("checked", null);
-			}
-		});
+		console.log("checking all");
+		$("[dimension="+e.id+"]").parent().addClass("checked");
+		$("[dimension="+e.id+"]").parent().parent().addClass("active");
 	}
 }
 
