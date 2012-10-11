@@ -43,6 +43,7 @@ function assignEventListeners() {
 }
 
 function clickDimension(e) {
+	console.log($("#"+e.id));
 	var	visualizeAll = d3.select("#"+e.getAttribute("dimension")),
 		checkedDimensions = $(".checked [dimension="+e.getAttribute("dimension")+"]").length,
 		allDimensions = $("[dimension="+e.getAttribute("dimension")+"]").length;
@@ -62,18 +63,21 @@ function clickDimension(e) {
 			visualizeAll.attr("checked", null);
 		}
 	}
-
 }
 
 function clickAllDimensions(e) {
-	console.log("all clicked");
-	return;
+	console.log($("#"+e.id));
+//	return;
 	
-	$(".checked [dimension="+e.id+"]").click();
-	if ($(".checked #"+e.id).length == 0) {
-		//this was not checked, is being checked
-		console.log("aa");
-		$("[dimension="+e.id+"]").click();
+	if (d3.select("#"+e.id).attr("checked") == null) {
+		d3.selectAll("[dimension="+e.id+"]").attr("checked", "checked");
+	} else {
+		d3.selectAll("[dimension="+e.id+"]").attr("checked", function() {
+			console.log(this);
+			if (this.attr("checked") != null) {
+				this.attr("checked", null);
+			}
+		});
 	}
 }
 
