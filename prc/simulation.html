@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html;charset=utf-8">
+<title>d3.js ~ A Bar Chart, Part 2</title>
+	<script type="text/javascript" src="../../../../../../common/public/mbostock-d3/d3.v2.min.js"></script>
+<style type='text/css'>
+.chart {
+	margin-left: 42px;
+}
+
+.chart .idle {
+	fill: #008800;
+	fill-opacity: .4;
+	stroke: #008800;
+	stroke-opacity: .5;
+}
+
+.chart .talk {
+	fill: #ff0000;
+	fill-opacity: .4;
+	stroke: #ff0000;
+	stroke-opacity: .5;
+}
+
+.x.axis line, path {
+  fill: none;
+  stroke: #000000;
+  shape-rendering: crispEdges;
+}
+
+.y.axis line, path {
+  fill: none;
+  stroke: #000000;
+  shape-rendering: crispEdges;
+}
+
+.threshold {
+	stroke: #aaaaaa;
+}
+</style>
+</head>
+<body>
+<div class="chart1"></div>
+<div class="chart2"></div>
+<div class="chart3"></div>
+<div class="chart4"></div>
+
+<script type='text/javascript'>
+	var t = 1297110663,
+		v = 70,
+		clock = 5,
+		speed = 1000 / 100,
+		AgentCount = 200,
+		agents = d3.range(AgentCount).map(next);
+
+	function next() {
+		return {
+			n : 0,
+			d : clock,
+			talktime : 0,
+			idletime : clock,
+			totaltime : clock,
+			calltime : Math.round(100 + 100 * Math.random()),
+			waittime : 30 + 60 * Math.random(),
+			busy : 1,
+			callduration : 5000 * Math.random() + 1000
+		};
+	}
+
+	var xcalls = d3.range(50).map(call);
+
+	function call() {
+		return {
+			start : 0,
+			duration : Math.round(50+50*Math.random())
+		};
+	}
+//	console.log(xcalls);
+
+	var calls = new Array();
+	d3.csv("./calls.csv", function(data) {
+//		console.log(calls);
+//		var chart1 = MakeChart(d3.select(".chart1"), w, h, agents);
+		data.shift();
+		calls = data.map(function(d) {
+			return {duration: Number(d.duration)};
+		});
+		console.log(calls);
+//		calls = data;
+		Route();
+	});
+
+	var w = 600
+		h = 400,
+		r = 4,
+		stretch = 1.5;
+
+	var x = d3.scale.linear()
+		.domain([ 0, AgentCount - 1 ])
+		.range([ r + .5, w - r - .5 ]);
+	var xax = d3.scale.linear()
+		.domain([ 0, AgentCount - 1 ])
+		.range([ 0, w ]);
+
+	var y = d3.scale.linear()
+		.domain([ 0, 1 ])
+		.rangeRound([ h - r * stretch - .5, r * stretch * .5 ]);
+	var yay = d3.scale.linear()
+		.domain([ 0, 1 ])
+		.rangeRound([ h, 0 ]);
+
+	var xAxis = d3.svg.axis()
+		.orient("bottom")
+		.scale(xax)
+		.ticks(4);
+	
+	var yAxis = d3.svg.axis()
+		.orient("left")
+		.scale(y)
+		.tickFormat(d3.format(",.0%"));
+	
+	function BusyOccupancy(d, t) {
+		return (t + d.n) / (t + d.d);
+	}
+
+	function AvailableOccupancy(d, t) {
+		return d.n / (t + d.d);
+	}
+
+	function MakeChart(parent, w, h, agents) {
+		var chart = parent
+			.append("svg")
+				.attr("class", "chart")
+				.attr("width", w+45)
+				.attr("height", h+20)
+			.append("g")
+    			.attr("transform", "translate(45, 5)");
+
+		chart.selectAll("ellipse")
+			.data(agents).enter().append("ellipse")
+				.attr("class", "idle")
+				.attr("cx", function(d, i) {return x(i);})
+				.attr("cy", function(d) {return y(AvailableOccupancy(d, 0));})
+				.attr("rx", r).attr("ry", r * stretch);
+
+		chart.append("path")
+			.attr("class", "threshold")
+			.attr("stroke-dasharray", "5,5")
+			.attr("d", "M5 "+y(0.5)+" L"+w+" "+y(0.5));
+		
+		chart.append("svg:g")
+			.attr("class", "x axis")
+			.attr("transform", "translate(0," + y(0) + ")")
+			.call(xAxis);
+
+		chart.append("svg:g")
+			.attr("class", "y axis")
+			.call(yAxis);
+
+//		chart.append("line").attr("x1", 0).attr("x2", w).attr("y1", y(0.5))
+//				.attr("y2", y(0.5)).style("stroke", "#000");
+
+		return chart;
+	}
+
+	var chart1 = MakeChart(d3.select(".chart1"), w, h, agents);
+//	Route();
+
+	//var shapes = chart1.selectAll("ellipse");
+	//shapes.each(function(d, i)
+	//{
+	// shape = d3.select(this);
+	// ShapeTransition(shape, d);
+	//})
+
+	function ShapeTransition(shape, d) {
+		if (d.busy) {
+			//end call
+			d.busy = 0;
+			d.n = d.talktime / d.waittime;
+			d.d = (d.totaltime) / d.waittime;
+			d.idletime += d.waittime;
+			d.totaltime += d.waittime;
+			shape.attr("class", "idle");
+			shape.transition().duration(speed * d.waittime).ease("linear")
+					.attrTween("cy", WaitOccupancyTween()).each("end", Done);
+		} else {
+			//start call
+			d.busy = 1;
+			d.n = d.talktime / d.calltime;
+			d.d = (d.talktime + d.idletime) / d.calltime;
+			d.talktime += d.calltime;
+			d.totaltime += d.calltime;
+			shape.attr("class", "talk");
+			shape.transition().duration(speed * d.calltime).ease("linear")
+					.attrTween("cy", CallOccupancyTween()).each("end", Done);
+		}
+	}
+
+	function CallOccupancyTween() {
+		return function(d, i) {
+			return function(t) {
+				return y(BusyOccupancy(d, t));
+			};
+		};
+	}
+
+	function WaitOccupancyTween() {
+		return function(d, i) {
+			return function(t) {
+				return y(AvailableOccupancy(d, t));
+			};
+		};
+	}
+
+	function Done() {
+		shape = d3.select(this);
+		d = shape.datum();
+		ShapeTransition(shape, d);
+	}
+
+	function occupancysort(a, b) {
+
+	}
+
+	function Route() {
+		if (calls.length > 0)
+		{
+			var call = calls.shift();
+			var transitiontime = call.duration;
+
+			var shape = chart1.select(".idle");
+			d = shape.datum();
+			d.busy = 1;
+			d.n = d.talktime / call.duration;
+			d.d = d.totaltime / call.duration;
+			d.talktime += call.duration;
+			d.totaltime += call.duration;
+			shape.attr("class", "talk");
+			shape.transition()
+				.duration(speed * transitiontime)
+				.ease("linear")
+				.attrTween("cy", CallOccupancyTween())
+				.each("end", DoneWait);
+			clock += transitiontime;
+		}
+	}
+
+	function DoneWait() {
+		var waittime = Math.round(50+50*Math.random());
+		var transitiontime = waittime;
+
+		shape = d3.select(this);
+		d = shape.datum();
+		if (d.talktime + d.idletime == clock) {
+//			alert('ending');
+		} else {
+			alert(clock + " versus " + d.totaltime);
+		}
+		d.busy = 0;
+		d.n = d.talktime / transitiontime;
+		d.d = d.totaltime / transitiontime;
+		// alert(d.n/d.d);
+		// alert((d.talktime)/(d.talktime+d.idletime+waittime));
+		d.idletime += transitiontime;
+		d.totaltime += transitiontime;
+		shape.attr("class", "idle");
+		shape.transition()
+			.duration(speed * transitiontime)
+			.ease("linear")
+			.attrTween("cy", WaitOccupancyTween())
+			.each("end", Route);
+		clock += transitiontime;
+	}
+
+	function NewRoute()
+	{
+		var shapes = chart1.selectAll(".talk");
+
+		if (calls.length > 0)
+		{
+			var call = calls.shift();
+			var transitiontime = call.duration;
+
+			var shape = chart1.select(".idle");
+			d = shape.datum();
+			d.busy = 1;
+			d.n = d.talktime / call.duration;
+			d.d = d.totaltime / call.duration;
+			d.talktime += call.duration;
+			d.totaltime += call.duration;
+			shape.attr("class", "talk");
+		}
+		else
+		{
+			return;
+		}
+
+		shapes.each(function(d, i)
+		{
+			if (d.totaltime == clock)
+			{
+				d.busy = 0;				
+				shape.attr("class", "idle");
+			}
+		})
+		
+		chart1.selectAll(".talk").transition()
+			.duration(speed * transitiontime)
+			.ease("linear")
+			.attrTween("cy", CallOccupancyTween())
+			.each("end", NewRoute);
+
+		chart1.selectAll(".talk").transition()
+			.duration(speed * transitiontime)
+			.ease("linear")
+			.attrTween("cy", CallOccupancyTween())
+			.each("end", NewRoute);
+
+		clock += transitiontime;
+	}
+</script>
+</body>
+</html>
