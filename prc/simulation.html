@@ -3,7 +3,7 @@
 <head>
 <meta http-equiv="content-type" content="text/html;charset=utf-8">
 <title>d3.js ~ A Bar Chart, Part 2</title>
-	<script type="text/javascript" src="../../../../../../common/public/mbostock-d3/d3.v2.min.js"></script>
+	<script type="text/javascript" src="../../public/mbostock-d3/d3.v2.min.js"></script>
 <style type='text/css'>
 .chart {
 	margin-left: 42px;
@@ -50,7 +50,7 @@
 	var t = 1297110663,
 		v = 70,
 		clock = 5,
-		speed = 1000 / 100,
+		speed = 1000 / 50,
 		AgentCount = 200,
 		agents = d3.range(AgentCount).map(next);
 
@@ -86,9 +86,8 @@
 		calls = data.map(function(d) {
 			return {duration: Number(d.duration)};
 		});
-		console.log(calls);
 //		calls = data;
-		Route();
+		setTimeout(Route, 1000);
 	});
 
 	var w = 600
@@ -231,6 +230,7 @@
 			var transitiontime = call.duration;
 
 			var shape = chart1.select(".idle");
+//			console.log(shape);
 			d = shape.datum();
 			d.busy = 1;
 			d.n = d.talktime / call.duration;
@@ -248,6 +248,7 @@
 	}
 
 	function DoneWait() {
+//		console.log("done wait");
 		var waittime = Math.round(50+50*Math.random());
 		var transitiontime = waittime;
 
@@ -256,7 +257,7 @@
 		if (d.talktime + d.idletime == clock) {
 //			alert('ending');
 		} else {
-			alert(clock + " versus " + d.totaltime);
+//			alert(clock + " versus " + d.totaltime);
 		}
 		d.busy = 0;
 		d.n = d.talktime / transitiontime;
@@ -320,6 +321,8 @@
 
 		clock += transitiontime;
 	}
+
+
 </script>
 </body>
 </html>
